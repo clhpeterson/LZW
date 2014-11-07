@@ -18,15 +18,17 @@ char* add_substring(struct Trie** my_trie_pointer, char* starting_point);
 int binary_search(struct Trie** children, int num_children, int key, int min_index, int max_index);
 int midpoint(int min_index, int max_index);
 void print_array(struct Trie** array, int length);
+void print_trie(struct Trie *my_trie, char* so_far);
 
 int main (int argc, char** argv){
 		//first you want to test the functionality of the trie
-		char* test = "baabc";
+		char* test = "ababababababa";
 		struct Trie* root = new_trie(-2);
 		char *next = add_substring(&root, test);
 		while (*next != '\0'){
-				print_array(root->children, root->num_children);
+				printf("--end of block--\n");
 				next = add_substring(&root, next);
+				print_trie(root, "");
 		}
 		// testing binary search
 		struct Trie* first = new_trie(0);
@@ -123,4 +125,26 @@ void print_array(struct Trie** array, int length){
 		}
 		printf("\n");
 
+}
+
+
+// now you want code to print every word in the trie recursively
+//
+
+void print_trie(struct Trie *my_trie, char* so_far){
+		struct Trie** children = my_trie->children;
+		int num_children = my_trie->num_children;
+		printf("%s\n", so_far);
+		if (num_children == 0){
+				free(so_far);
+				return;
+		}
+		int length = strlen(so_far);
+				for(int i = 0; i < num_children; i++){
+						char* new_string = malloc((length+1)*sizeof(char));
+						memcpy(new_string, so_far, sizeof(char)*length);
+						memcpy(new_string+length, &(children[i]->character), sizeof(char));
+						print_trie(children[i], new_string);
+				}
+		return;
 }
