@@ -18,22 +18,37 @@ struct Trie{
 		int code;
 };
 
-struct Trie* new_trie(int character);
-char* add_substring(struct Trie** my_trie_pointer, char* starting_point);
+
+struct Trie* new_trie(int character, int code);
+struct Trie* add_substring(struct Trie* my_trie, int next_character);
 int binary_search(struct Trie** children, int num_children, int key, int min_index, int max_index);
 int midpoint(int min_index, int max_index);
 void print_array(struct Trie** array, int length);
 void print_trie(struct Trie *my_trie, char* so_far);
+struct Trie* initialize_trie();
 
 int main (int argc, char** argv){
 		//first you want to test the functionality of the trie
-		char* test = "ababababababa";
-		struct Trie* root = new_trie(-2);
-		char *next = add_substring(&root, test);
+		struct Trie* root = initialize_trie();
 		int returned = getBits(8);
+		struct Trie* where_at = root;
+		current_code = 256+3;
+		while(returned != EOF){
+				where_at = add_substring(where_at, returned);
+				if (where_at == NULL){
+						where_at = root;
+						current_code += 1;
+continue;
+				}
+				
+				returned = getBits(8);
+		}
+		where_at = add_substring(where_at, returned);
+		//print_trie(root, "");
 
 		
 		// testing binary search
+		/*
 		struct Trie* first = new_trie(0);
 		struct Trie* second = new_trie(2);
 		struct Trie* third = new_trie(4);
@@ -41,6 +56,7 @@ int main (int argc, char** argv){
 		struct Trie* array[3] = {first, second, third};
 		my_root->num_children = 3;
 		my_root->children = array;
+		*/
 		//printf("%d\n", binary_search(array, 3, -1, 0, 2));
 		// seems to be working
 		//
@@ -48,11 +64,24 @@ int main (int argc, char** argv){
 		return 0;
 }
 
-struct Trie* new_trie(int character){
+struct Trie* new_trie(int character, int code){
 		struct Trie* to_return = calloc(1, sizeof(struct Trie));
 		to_return->character = character;
 		to_return->num_children = 0;
+		to_return->code = code;
 		to_return->children = NULL;
+		return to_return;
+}
+
+struct Trie* initialize_trie(){
+		struct Trie* to_return = calloc(1, sizeof(struct Trie));
+		to_return->character = -1;
+		struct Trie** children = calloc(256, sizeof(struct Trie*));
+		for (int i = 0; i < 256; i++){
+				children[i] = new_trie(i, i+3);
+		}
+		to_return->num_children = 256;
+		to_return->children = children;
 		return to_return;
 }
 
@@ -60,22 +89,23 @@ struct Trie* new_trie(int character){
 // pass a pointer to beginning of the string. make this recursive!
 // you get the trie and a pointer to the next character. returns true if inserted, false otherwise
 // you need to modify this so that you instead return 
-char* add_substring(struct Trie* my_trie, char* starting_point){
-		//TODO account for reaching the end of the file
+// returns a pointer to subtrie. if it was inserted, 
+struct Trie* add_substring(struct Trie* my_trie, int next_character){
 		struct Trie** children = my_trie->children;
 		int num_children = my_trie->num_children;
 		if (num_children == 0){
 				struct Trie** new_children = calloc(1, sizeof(struct Trie*));
-				new_children[0] = new_trie((int) *starting_point);
+				new_children[0] = new_trie(next_character, current_code);
 				my_trie->children = new_children;
 				my_trie->num_children = 1;
-				return starting_point+1;
+				printf("%d\n", my_trie->code);
+				return NULL;
 		}
-		int index = binary_search(children, num_children, (int) *starting_point, 0, num_children-1);
+		int index = binary_search(children, num_children, next_character, 0, num_children-1);
 		
 		// this means that it's not in the array, so you need to add it
 		if (index >= num_children){
-				struct Trie* to_insert = new_trie((int) *starting_point);
+				struct Trie* to_insert = new_trie(next_character, current_code);
 				index -= num_children;
 				struct Trie** new_children = calloc(num_children+1, sizeof(struct Trie*));
 				memcpy(new_children, children, sizeof(struct Trie*)*(index));
@@ -84,11 +114,12 @@ char* add_substring(struct Trie* my_trie, char* starting_point){
 				free(children);
 				my_trie->children = new_children;
 				my_trie->num_children = num_children+1;
-				return starting_point+1;
+				printf("%d\n", my_trie->code);
+				return NULL;
 		}
 		// else we found it, we need to go to the next level
 		else{
-			return add_substring(children[index], starting_point+1);
+			return children[index];
 		}
 }
 
