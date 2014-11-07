@@ -1,16 +1,21 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+#include "/c/cs323/Hwk2/code.h"
 
 #define TRUE 0
 #define FALSE 1
 
+int MAXBITS = 12;
+int current_code = 0;
 
 // trie needs to have a root
 struct Trie{
 		int character;
 		int num_children;
 		struct Trie** children;
+		int num_appearances;
+		int code;
 };
 
 struct Trie* new_trie(int character);
@@ -25,11 +30,9 @@ int main (int argc, char** argv){
 		char* test = "ababababababa";
 		struct Trie* root = new_trie(-2);
 		char *next = add_substring(&root, test);
-		while (*next != '\0'){
-				printf("--end of block--\n");
-				next = add_substring(&root, next);
-				print_trie(root, "");
-		}
+		int returned = getBits(8);
+
+		
 		// testing binary search
 		struct Trie* first = new_trie(0);
 		struct Trie* second = new_trie(2);
@@ -56,10 +59,9 @@ struct Trie* new_trie(int character){
 
 // pass a pointer to beginning of the string. make this recursive!
 // you get the trie and a pointer to the next character. returns true if inserted, false otherwise
-//
-char* add_substring(struct Trie** my_trie_pointer, char* starting_point){
+// you need to modify this so that you instead return 
+char* add_substring(struct Trie* my_trie, char* starting_point){
 		//TODO account for reaching the end of the file
-		struct Trie* my_trie = *my_trie_pointer;
 		struct Trie** children = my_trie->children;
 		int num_children = my_trie->num_children;
 		if (num_children == 0){
@@ -86,7 +88,7 @@ char* add_substring(struct Trie** my_trie_pointer, char* starting_point){
 		}
 		// else we found it, we need to go to the next level
 		else{
-			return add_substring(&(children[index]), starting_point+1);
+			return add_substring(children[index], starting_point+1);
 		}
 }
 

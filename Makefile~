@@ -1,0 +1,16 @@
+CC = gcc
+CFLAGS = -std=c99 -pedantic -Wall -g3
+
+CODE = /c/cs323/Hwk2/code.o
+
+lzw: lzw.o $(CODE)
+	$(CC) $(CFLAGS)
+
+lzw.o: lzw.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+lzw.o $(CODE): /c/cs323/Hwk2/code.h
+
+
+
+	
