@@ -21,12 +21,12 @@ void print_array(struct Trie** array, int length);
 
 int main (int argc, char** argv){
 		//first you want to test the functionality of the trie
-		char* test = "baabc";
+		char* test = "ababc";
 		struct Trie* root = new_trie(-2);
-		char *next = add_substring(&root, test);
-		while (*next != '\0'){
-				print_array(root->children, root->num_children);
+		char* next = add_substring(&root, test);
+		while (*next != EOF){
 				next = add_substring(&root, next);
+				print_array(root->children, root->num_children);
 		}
 		// testing binary search
 		struct Trie* first = new_trie(0);
@@ -36,7 +36,7 @@ int main (int argc, char** argv){
 		struct Trie* array[3] = {first, second, third};
 		my_root->num_children = 3;
 		my_root->children = array;
-		//printf("%d\n", binary_search(array, 3, -1, 0, 2));
+		printf("%d\n", binary_search(array, 3, -1, 0, 2));
 		// seems to be working
 		//
 		// testing 
@@ -71,12 +71,12 @@ char* add_substring(struct Trie** my_trie_pointer, char* starting_point){
 		
 		// this means that it's not in the array, so you need to add it
 		if (index >= num_children){
-				struct Trie* to_insert = new_trie((int) *starting_point);
+				printf("insertion index is: %d\n", index-num_children);
 				index -= num_children;
 				struct Trie** new_children = calloc(num_children+1, sizeof(struct Trie*));
 				memcpy(new_children, children, sizeof(struct Trie*)*(index));
-				memcpy(new_children+index, &to_insert, sizeof(struct Trie*));
-				memcpy(new_children+index+1, children+index, sizeof(struct Trie*)*(num_children-index));
+				memcpy(new_children+(index)*sizeof(struct Trie*), new_trie((int) *starting_point), sizeof(struct Trie*));
+				memcpy(new_children+(index+1)*sizeof(struct Trie*), children+index, sizeof(struct Trie*)*(num_children-index));
 				free(children);
 				my_trie->children = new_children;
 				my_trie->num_children = num_children+1;
@@ -118,9 +118,9 @@ int midpoint(int min_index, int max_index){
 
 void print_array(struct Trie** array, int length){
 		for (int i = 0; i < length; i++){
-				printf("%c ", array[i]->character);
+				printf("finished printing\n");
+				printf("%c\n", array[i]->character);
 
 		}
-		printf("\n");
 
 }
