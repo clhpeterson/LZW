@@ -20,22 +20,25 @@ struct Trie{
 		int num_appearances;
 };
 
-/*
+
 struct Stack{
 	int character;
 	struct Stack* last;
-}
-*/
+};
+
 
 struct Trie** TABLE;
 
 struct Trie* new_trie(int character, int prefix_code);
 void initialize_table();
 int add_substring(int where_at, int character);
-int binary_search(int index, int key, int min_index, int max_index);
+int binary_search(int index, int key, int min_index, int max_index, int* to_insert);
 int midpoint(int min_index, int max_index);
-int get_prefix(int where_at);
+//int get_prefix(int where_at);
 void insert(int int_index, int table_index, int value);
+struct Stack* initialize_stack();
+struct Stack* push(int character, struct Stack* current);
+int pop(struct Stack** current);
 
 int main (int argc, char** argv){
 		//first you want to test the functionality of the trie
@@ -136,8 +139,8 @@ int main (int argc, char** argv){
 			if (where_at != 0){
 				where_at = add_substring(where_at, returned);
 			}
-			//putBits(9, 2);
-			printf("2\n");
+			putBits(9, 2);
+			//printf("2\n");
 			//printf("%d\n", CURRENT_CODE);
 			//int last_char = get_prefix(267);
 			//printf("\n");
@@ -147,59 +150,68 @@ int main (int argc, char** argv){
 
 
 		else{
+			TABLE = calloc(512, sizeof(struct Trie*));
 			if (initialize){
-				CURRENT_CODE = 256+3;
 				initialize_table();
+				CURRENT_CODE = 256+3;
 			}
-			int returned = getBits(9);
-			while (returned != 2){
-				if (returned >= CURRENT_CODE){
-					continue;
-				} else {
-					TABLE[CURRENT_CODE] = new_trie(get_prefix(returned), returned);
-					// you need to insert this into TABLE[returned]
-					CURRENT_CODE += 1;
+			int newC = getBits(9);
+			int oldC = 0;
+			int C = newC;
+			int prefix;
+			int finalK;
+
+			struct Stack* my_stack = initialize_stack();
+
+			while (newC != EOF){
+
+				if (C >= CURRENT_CODE){
+					my_stack = push(finalK, my_stack);
+					C = oldC;
+					
 				}
-				returned = getBits(9);
-			}
+					prefix = TABLE[C]->prefix_code;
+					while (prefix != 0){
+						my_stack = push(TABLE[C]->character, my_stack);
+						C = prefix;
+						prefix = TABLE[C]->prefix_code;
+					}
+
+
+					finalK = TABLE[C]->character;
+					printf("%c", finalK);
+					while (my_stack->character != 0){
+						int K = pop(&my_stack);
+						printf("%c", K);
+					}
+
+					if (oldC != 0){
+						TABLE[CURRENT_CODE] = new_trie(finalK, oldC);
+						int to_insert;
+						int num_children = TABLE[oldC]->num_children;
+						int index = binary_search(oldC, finalK, 0, num_children-1, &to_insert);
+						insert(index, oldC, CURRENT_CODE);
+						CURRENT_CODE += 1;
+					}
+					oldC = newC;
+					newC = getBits(9);
+					C = newC;
+				}
 			return 0;
 		}
-
-		
-		// let's try this decode thing
-
-		
-
-		//print_trie(root, "");
-
-		
-		// testing binary search
-		/*
-		struct Trie* first = new_trie(0);
-		struct Trie* second = new_trie(2);
-		struct Trie* third = new_trie(4);
-		struct Trie* my_root = new_trie(-1);
-		struct Trie* array[3] = {first, second, third};
-		my_root->num_children = 3;
-		my_root->children = array;
-		*/
-		//printf("%d\n", binary_search(array, 3, -1, 0, 2));
-		// seems to be working
-		//
-		// testing 
 		return 0;
 }
 
-/*
-struct Stack* initailize_stack(){
-	struct Stack* to_return = calloc(1, sizeof(Stack));
-	to_return->character = -1;
+
+struct Stack* initialize_stack(){
+    struct Stack* to_return = calloc(1, sizeof(struct Stack));
+	to_return->character = 0;
 	to_return->last = NULL;
 	return to_return;
 }
 
 struct Stack* push(int character, struct Stack* current){
-	struct Stack* to_return = calloc(1, sizeof(Stack));
+	struct Stack* to_return = calloc(1, sizeof(struct Stack));
 	to_return->character = character;
 	to_return->last = current;
 	return to_return;
@@ -208,11 +220,12 @@ struct Stack* push(int character, struct Stack* current){
 int pop(struct Stack** current){
 	struct Stack* entry = *current;
 	int to_return = entry->character;
-	entry = current->last;
-	free(*curent);
+    *current = entry->last;
+    free(entry);
 	return to_return;
 }
-*/
+
+/*
 // returns the first character
 int get_prefix(int where_at){
 	int character = TABLE[where_at]->character;
@@ -224,7 +237,11 @@ int get_prefix(int where_at){
 	printf("%c", character);
 	return to_return;
 }
+*/
 
+// int_index is the index in children
+// table_index is the index in TABLE
+// value is the value to be inserted (code whose prefix is table_index)
 void insert(int int_index, int table_index, int value){
 	struct Trie* of_interest = TABLE[table_index];
 	int num_children = of_interest->num_children;
@@ -270,41 +287,21 @@ int add_substring(int where_at, int character){
 		struct Trie* entry = TABLE[where_at];
 		int num_children = entry->num_children;
 		int* children = entry->children;
-		if (num_children == 0){
-				// this means that the entry has no children, so you've reached the end of the prefix and you need to create
-				// a new code
-				int* new_children = calloc(1, sizeof(int));
-				new_children[0] = CURRENT_CODE;
-				entry->children = new_children;
-				entry->num_children = 1;
-				struct Trie* new_entry = new_trie(character, where_at);
-				TABLE[CURRENT_CODE] = new_entry;
-				if (where_at == 0){
-					// then you need to do 1 and ascii value
-					printf("1\n%d\n", character);
-					//putBits(9, 1);
-					//putBits(9, character);
-				} else {
-					printf("%d\n", where_at);
-					//putBits(9, where_at);
-				}
-				return -1;
-		}
-		int index = binary_search(where_at, character, 0, num_children-1);
-		if (index >= num_children){
+		int to_insert;
+		int index = binary_search(where_at, character, 0, num_children-1, &to_insert);
+		if (to_insert){
 			// this means that you need to add it
 			
 			struct Trie* to_insert = new_trie(character, where_at);
-			index -= num_children;
 			insert(index, where_at, CURRENT_CODE);
 			if (where_at == 0){
 
-				printf("1\n%d\n", character);
-				//putBits(9, 1);
-				//putBits(9, character);
+				//printf("1\n%d\n", character);
+				putBits(9, 1);
+				putBits(9, character);
 			} else {
-				printf("%d\n", where_at);
-				//putBits(9, where_at);
+				//printf("%d\n", where_at);
+				putBits(9, where_at);
 			}
 			TABLE[CURRENT_CODE] = to_insert;
 			return -1;
@@ -317,20 +314,21 @@ int add_substring(int where_at, int character){
 // this should take a bunch of children. if it finds it, then it returns the
 // index where it is. if it does not find it, it returns the index i such that
 // children[i] < key, children[i-1] > key
-int binary_search(int index, int key, int min_index, int max_index){
+int binary_search(int index, int key, int min_index, int max_index, int* to_insert){
 		struct Trie* entry = TABLE[index];
-		int num_children = entry->num_children;
 		int* children = entry->children;
 		if (max_index < min_index){
-				return min_index+num_children;
+				*to_insert = TRUE;
+				return min_index;
 		} else {
 				int mid_index = midpoint(min_index, max_index);
 				int of_interest = TABLE[children[mid_index]]->character;
 				if (of_interest > key){
-						return binary_search(index, key, min_index, mid_index-1);
+						return binary_search(index, key, min_index, mid_index-1, to_insert);
 				} else if (of_interest < key) {
-						return binary_search(index, key, mid_index+1, max_index);
+						return binary_search(index, key, mid_index+1, max_index, to_insert);
 				} else {
+						*to_insert = FALSE;
 						return mid_index;
 				}
 		}
