@@ -30,6 +30,82 @@ void free_trie(struct Trie* my_trie);
 
 int main (int argc, char** argv){
 		//first you want to test the functionality of the trie
+		// let's do the command line processing
+		if (argc == 1){
+				fprintf(stderr, "too few arguments\n");
+				return 0;
+		}
+		int encode;
+		int delay;
+		int prune = FALSE;
+		int initialize = TRUE;
+		if (strcmp(argv[1],  "decode") == 0){
+				if (argc > 2){
+						fprintf(stderr, "you shouldn't have arguments after decode\n");
+						return 0;
+				}
+				encode = FALSE;
+		}
+
+		else{
+				if (strcmp(argv[1], "encode") != 0){
+						fprintf(stderr, "no encode or decode paramter!\n");
+						return 0;
+				}
+				encode = TRUE;
+				int i = 2;
+				while (i < argc){
+						char *of_interest = argv[i];
+						if (strcmp(of_interest, "-m") == 0){
+								i += 1;
+								if (i == argc){
+										fprintf(stderr, "you need a number after -m\n");
+										return 0;
+								}
+								of_interest = argv[i];
+								char *pointer;
+								int caught = (int) strtol(of_interest, &pointer, 10);
+								if (pointer == of_interest){
+										fprintf(stderr, "you need a number after -m\n");
+										return 0;
+								}
+								if (caught > 8 && caught <= 20){
+										MAXBITS = caught;
+								}
+								else{
+										MAXBITS = 12;
+								}
+								i += 1;
+								continue;
+						}
+						else if (strcmp(of_interest, "-e") == 0){
+								initialize = FALSE;
+								i += 1;
+								continue;
+						}
+						else if (strcmp(of_interest, "-p") == 0){
+								prune = TRUE;
+								i += 1;
+								continue;
+						}
+						else {
+								fprintf(stderr, "invalid argument\n");
+								return 0;
+						}
+				}
+		}
+
+		if (encode){
+				struct Trie *root = NULL;
+				if (initialize){
+						root = initialize_trie();
+				}
+				else{
+						root = new_trie(-1, -1);
+				}
+		}
+
+
 		struct Trie* root = initialize_trie();
 		int returned = getBits(8);
 		struct Trie* where_at = root;
