@@ -3,30 +3,30 @@
 #include<string.h>
 #include "/c/cs323/Hwk2/code.h"
 
-#define TRUE 0
-#define FALSE 1
+#define TRUE 1
+#define FALSE 0
 
 int MAXBITS = 12;
-int current_code = 0;
+int CURRENT_CODE = 0;
+
+// the table in going to be a global variable
 
 // trie needs to have a root
 struct Trie{
 		int character;
+		int* children;
 		int num_children;
-		struct Trie** children;
+		int prefix_code;
 		int num_appearances;
-		int code;
 };
 
+struct Trie** TABLE;
 
-struct Trie* new_trie(int character, int code);
-struct Trie* add_substring(struct Trie* my_trie, int next_character);
-int binary_search(struct Trie** children, int num_children, int key, int min_index, int max_index);
+struct Trie* new_trie(int character, int prefix_code);
+void initialize_table();
+int add_substring(int where_at, int character);
+int binary_search(int index, int key, int min_index, int max_index);
 int midpoint(int min_index, int max_index);
-void print_array(struct Trie** array, int length);
-void print_trie(struct Trie *my_trie, char* so_far);
-struct Trie* initialize_trie();
-void free_trie(struct Trie* my_trie);
 
 int main (int argc, char** argv){
 		//first you want to test the functionality of the trie
@@ -94,33 +94,50 @@ int main (int argc, char** argv){
 						}
 				}
 		}
-
+		
 		if (encode){
-				struct Trie *root = NULL;
-				if (initialize){
-						root = initialize_trie();
-				}
-				else{
-						root = new_trie(-1, -1);
-				}
-		}
+			TABLE = calloc(512, sizeof(struct Trie*));
 
+			
+			CURRENT_CODE = 256+3;
+			initialize_table();
+			
 
-		struct Trie* root = initialize_trie();
-		int returned = getBits(8);
-		struct Trie* where_at = root;
-		current_code = 256+3;
-		while(returned != EOF){
-				where_at = add_substring(where_at, returned);
-				if (where_at == NULL){
-						where_at = root;
-						current_code += 1;
-continue;
+			/*
+			TABLE[0] = new_trie(-1, -1);
+			CURRENT_CODE = 3;
+			*/
+			int where_at = 0;
+			int caught = 0;
+			int returned = getBits(8);
+
+			while(returned != EOF){
+				// add_substring returns NULL if it inserts it, or else returns the entry where the next character was found
+				// with the -e flag, you need to check if add_substring returns null 
+				caught = add_substring(where_at, returned);
+				if (caught == -1){
+					CURRENT_CODE += 1;
+					if (where_at != 0){
+						where_at = 0;
+						continue;
+					}
+				} else {
+					where_at = caught;
 				}
-				
 				returned = getBits(8);
+			}
+			if (where_at != 0){
+				where_at = add_substring(where_at, returned);
+			}
+			printf("2\n");
+			return 0;
 		}
-		where_at = add_substring(where_at, returned);
+
+
+		else{
+				return 0;
+		}
+
 		
 		// let's try this decode thing
 
@@ -146,60 +163,77 @@ continue;
 		return 0;
 }
 
-struct Trie* new_trie(int character, int code){
+
+// you want a recursive function to print out the prefix
+
+// new_trie creates a new trie with character and prefix_code
+struct Trie* new_trie(int character, int prefix_code){
 		struct Trie* to_return = calloc(1, sizeof(struct Trie));
 		to_return->character = character;
-		to_return->num_children = 0;
-		to_return->code = code;
+		to_return->prefix_code = prefix_code;
+		to_return->num_appearances = 0;
 		to_return->children = NULL;
 		return to_return;
 }
 
-struct Trie* initialize_trie(){
-		struct Trie* to_return = calloc(1, sizeof(struct Trie));
-		to_return->character = -1;
-		struct Trie** children = calloc(256, sizeof(struct Trie*));
-		for (int i = 0; i < 256; i++){
-				children[i] = new_trie(i, i+3);
-		}
-		to_return->num_children = 256;
-		to_return->children = children;
-		return to_return;
-}
 
+void initialize_table(){
+		int* children = calloc(256, sizeof(int));
+		for (int i = 0; i < 256; i++){
+				TABLE[i+3] = new_trie(i, 0);
+				children[i] = i;
+		}
+		TABLE[0] = new_trie(-1, -1);
+		TABLE[0]->children = children;
+		TABLE[0]->num_children = 256;
+}
 
 // pass a pointer to beginning of the string. make this recursive!
 // you get the trie and a pointer to the next character. returns true if inserted, false otherwise
 // you need to modify this so that you instead return 
 // returns a pointer to subtrie. if it was inserted, 
-struct Trie* add_substring(struct Trie* my_trie, int next_character){
-		struct Trie** children = my_trie->children;
-		int num_children = my_trie->num_children;
+int add_substring(int where_at, int character){
+		struct Trie* entry = TABLE[where_at];
+		int num_children = entry->num_children;
+		int* children = entry->children;
 		if (num_children == 0){
-				struct Trie** new_children = calloc(1, sizeof(struct Trie*));
-				new_children[0] = new_trie(next_character, current_code);
-				my_trie->children = new_children;
-				my_trie->num_children = 1;
-				printf("%d\n", my_trie->code);
-				return NULL;
+				// this means that the entry has no children, so you've reached the end of the prefix and you need to create
+				// a new code
+				int* new_children = calloc(1, sizeof(int));
+				new_children[0] = CURRENT_CODE;
+				entry->children = new_children;
+				entry->num_children = 1;
+				struct Trie* new_entry = new_trie(character, where_at);
+				TABLE[CURRENT_CODE] = new_entry;
+				if (where_at == 0){
+					// then you need to do 1 and ascii value
+					printf("1\n%d\n", character);
+				} else {
+					printf("%d\n", where_at);
+				}
+				return -1;
 		}
-		int index = binary_search(children, num_children, next_character, 0, num_children-1);
-		
-		// this means that it's not in the array, so you need to add it
+		int index = binary_search(where_at, character, 0, num_children-1);
 		if (index >= num_children){
-				struct Trie* to_insert = new_trie(next_character, current_code);
-				index -= num_children;
-				struct Trie** new_children = calloc(num_children+1, sizeof(struct Trie*));
-				memcpy(new_children, children, sizeof(struct Trie*)*(index));
-				memcpy(new_children+index, &to_insert, sizeof(struct Trie*));
-				memcpy(new_children+index+1, children+index, sizeof(struct Trie*)*(num_children-index));
-				free(children);
-				my_trie->children = new_children;
-				my_trie->num_children = num_children+1;
-				printf("%d\n", my_trie->code);
-				return NULL;
+			// this means that you need to add it
+			
+			struct Trie* to_insert = new_trie(character, where_at);
+			index -= num_children;
+			int* new_children = calloc(num_children+1, sizeof(int));
+			memcpy(new_children, children, sizeof(int)*index);
+			memcpy(new_children+index, &CURRENT_CODE, sizeof(int));
+			memcpy(new_children+index+1, children+index, sizeof(int)*(num_children-index));
+			entry->children = new_children;
+			free(children);
+			entry->num_children = num_children+1;
+			if (where_at == 0){
+				printf("1\n%d\n", character);
+			} else {
+				printf("%d\n", where_at);
+			}
+			TABLE[CURRENT_CODE] = to_insert;
+			return -1;
 		}
-		// else we found it, we need to go to the next level
 		else{
 			return children[index];
 		}
@@ -208,70 +242,25 @@ struct Trie* add_substring(struct Trie* my_trie, int next_character){
 // this should take a bunch of children. if it finds it, then it returns the
 // index where it is. if it does not find it, it returns the index i such that
 // children[i] < key, children[i-1] > key
-int binary_search(struct Trie** children, int num_children, int key, int min_index, int max_index){
-	if (max_index < min_index){
-			// this means that everything was checked but it was not found.
-			// these two are going to differ by 1. 
-			return min_index+num_children;
-	}
-	else{
-			int mid_index = midpoint(min_index, max_index);
-			int character_of_interest = children[mid_index]->character;
-			if (character_of_interest > key){
-					return binary_search(children, num_children, key, min_index, mid_index-1);
-			}
-			else if (character_of_interest < key){
-					return binary_search(children, num_children, key, mid_index+1, max_index);
-			}
-			else {
-					return mid_index;
-			}
-	}
+int binary_search(int index, int key, int min_index, int max_index){
+		struct Trie* entry = TABLE[index];
+		int num_children = entry->num_children;
+		int* children = entry->children;
+		if (max_index < min_index){
+				return min_index+num_children;
+		} else {
+				int mid_index = midpoint(min_index, max_index);
+				int of_interest = TABLE[children[mid_index]]->character;
+				if (of_interest > key){
+						return binary_search(index, key, min_index, mid_index-1);
+				} else if (of_interest < key) {
+						return binary_search(index, key, mid_index+1, max_index);
+				} else {
+						return mid_index;
+				}
+		}
 }
 
 int midpoint(int min_index, int max_index){
 		return min_index+(max_index-min_index)/2;
-}
-
-void print_array(struct Trie** array, int length){
-		for (int i = 0; i < length; i++){
-				printf("%c ", array[i]->character);
-
-		}
-		printf("\n");
-
-}
-
-
-// now you want code to print every word in the trie recursively
-//
-
-void print_trie(struct Trie *my_trie, char* so_far){
-		struct Trie** children = my_trie->children;
-		int num_children = my_trie->num_children;
-		printf("%s\n", so_far);
-		if (num_children == 0){
-				free(so_far);
-				return;
-		}
-		int length = strlen(so_far);
-				for(int i = 0; i < num_children; i++){
-						char* new_string = malloc((length+1)*sizeof(char));
-						memcpy(new_string, so_far, sizeof(char)*length);
-						memcpy(new_string+length, &(children[i]->character), sizeof(char));
-						print_trie(children[i], new_string);
-				}
-		return;
-}
-
-void free_trie(struct Trie* my_trie){
-		// you need to free both and Trie and the array
-		for (int i = 0; i < my_trie->num_children; i++){
-				free_trie((my_trie->children)[i]);
-		}
-		if (my_trie->children != NULL){
-				free(my_trie->children);
-		}
-		free(my_trie);	
-		return;
 }
