@@ -20,6 +20,13 @@ struct Trie{
 		int num_appearances;
 };
 
+/*
+struct Stack{
+	int character;
+	struct Stack* last;
+}
+*/
+
 struct Trie** TABLE;
 
 struct Trie* new_trie(int character, int prefix_code);
@@ -27,6 +34,8 @@ void initialize_table();
 int add_substring(int where_at, int character);
 int binary_search(int index, int key, int min_index, int max_index);
 int midpoint(int min_index, int max_index);
+int get_prefix(int where_at);
+void insert(int int_index, int table_index, int value);
 
 int main (int argc, char** argv){
 		//first you want to test the functionality of the trie
@@ -36,7 +45,6 @@ int main (int argc, char** argv){
 				return 0;
 		}
 		int encode;
-		int delay;
 		int prune = FALSE;
 		int initialize = TRUE;
 		if (strcmp(argv[1],  "decode") == 0){
@@ -98,15 +106,14 @@ int main (int argc, char** argv){
 		if (encode){
 			TABLE = calloc(512, sizeof(struct Trie*));
 
-			
-			CURRENT_CODE = 256+3;
-			initialize_table();
-			
+			if (initialize){
+				CURRENT_CODE = 256+3;
+				initialize_table();				
+			} else {
+				TABLE[0] = new_trie(-1, -1);
+				CURRENT_CODE = 3;	
+			}
 
-			/*
-			TABLE[0] = new_trie(-1, -1);
-			CURRENT_CODE = 3;
-			*/
 			int where_at = 0;
 			int caught = 0;
 			int returned = getBits(8);
@@ -129,13 +136,33 @@ int main (int argc, char** argv){
 			if (where_at != 0){
 				where_at = add_substring(where_at, returned);
 			}
+			//putBits(9, 2);
 			printf("2\n");
+			//printf("%d\n", CURRENT_CODE);
+			//int last_char = get_prefix(267);
+			//printf("\n");
+			//printf("%c\n", last_char);
 			return 0;
 		}
 
 
 		else{
-				return 0;
+			if (initialize){
+				CURRENT_CODE = 256+3;
+				initialize_table();
+			}
+			int returned = getBits(9);
+			while (returned != 2){
+				if (returned >= CURRENT_CODE){
+					continue;
+				} else {
+					TABLE[CURRENT_CODE] = new_trie(get_prefix(returned), returned);
+					// you need to insert this into TABLE[returned]
+					CURRENT_CODE += 1;
+				}
+				returned = getBits(9);
+			}
+			return 0;
 		}
 
 		
@@ -163,6 +190,53 @@ int main (int argc, char** argv){
 		return 0;
 }
 
+/*
+struct Stack* initailize_stack(){
+	struct Stack* to_return = calloc(1, sizeof(Stack));
+	to_return->character = -1;
+	to_return->last = NULL;
+	return to_return;
+}
+
+struct Stack* push(int character, struct Stack* current){
+	struct Stack* to_return = calloc(1, sizeof(Stack));
+	to_return->character = character;
+	to_return->last = current;
+	return to_return;
+}
+
+int pop(struct Stack** current){
+	struct Stack* entry = *current;
+	int to_return = entry->character;
+	entry = current->last;
+	free(*curent);
+	return to_return;
+}
+*/
+// returns the first character
+int get_prefix(int where_at){
+	int character = TABLE[where_at]->character;
+	if (TABLE[where_at]->prefix_code == 0){
+		printf("%c", character);
+		return character;
+	}
+	int to_return = get_prefix(TABLE[where_at]->prefix_code);
+	printf("%c", character);
+	return to_return;
+}
+
+void insert(int int_index, int table_index, int value){
+	struct Trie* of_interest = TABLE[table_index];
+	int num_children = of_interest->num_children;
+	int* children = of_interest->children;
+	int* new_children = calloc(num_children+1, sizeof(int));
+	memcpy(new_children, children, sizeof(int)*int_index);
+	memcpy(new_children+int_index, &value, sizeof(int));
+	memcpy(new_children+int_index+1, children+int_index, sizeof(int)*(num_children-int_index));
+	of_interest->children = new_children;
+	free(children);
+	of_interest->num_children = num_children+1;
+}
 
 // you want a recursive function to print out the prefix
 
@@ -208,8 +282,11 @@ int add_substring(int where_at, int character){
 				if (where_at == 0){
 					// then you need to do 1 and ascii value
 					printf("1\n%d\n", character);
+					//putBits(9, 1);
+					//putBits(9, character);
 				} else {
 					printf("%d\n", where_at);
+					//putBits(9, where_at);
 				}
 				return -1;
 		}
@@ -219,17 +296,15 @@ int add_substring(int where_at, int character){
 			
 			struct Trie* to_insert = new_trie(character, where_at);
 			index -= num_children;
-			int* new_children = calloc(num_children+1, sizeof(int));
-			memcpy(new_children, children, sizeof(int)*index);
-			memcpy(new_children+index, &CURRENT_CODE, sizeof(int));
-			memcpy(new_children+index+1, children+index, sizeof(int)*(num_children-index));
-			entry->children = new_children;
-			free(children);
-			entry->num_children = num_children+1;
+			insert(index, where_at, CURRENT_CODE);
 			if (where_at == 0){
+
 				printf("1\n%d\n", character);
+				//putBits(9, 1);
+				//putBits(9, character);
 			} else {
 				printf("%d\n", where_at);
+				//putBits(9, where_at);
 			}
 			TABLE[CURRENT_CODE] = to_insert;
 			return -1;
