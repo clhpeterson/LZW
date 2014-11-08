@@ -151,9 +151,14 @@ int main (int argc, char** argv){
 
 		else{
 			TABLE = calloc(512, sizeof(struct Trie*));
+			initialize = FALSE;
 			if (initialize){
 				initialize_table();
 				CURRENT_CODE = 256+3;
+			} else {
+				TABLE[0] = new_trie(-1, -1);
+				CURRENT_CODE = 3;
+				TABLE[1] = new_trie(-1, 0);
 			}
 			int newC = getBits(9);
 			int oldC = 0;
@@ -162,8 +167,12 @@ int main (int argc, char** argv){
 			int finalK;
 
 			struct Stack* my_stack = initialize_stack();
-
 			while (newC != EOF){
+
+				if (C == 1){
+					finalK = getBits(9);
+					printf("%c", finalK);
+				}
 
 				if (C >= CURRENT_CODE){
 					my_stack = push(finalK, my_stack);
@@ -177,15 +186,19 @@ int main (int argc, char** argv){
 						prefix = TABLE[C]->prefix_code;
 					}
 
-
-					finalK = TABLE[C]->character;
-					printf("%c", finalK);
-					while (my_stack->character != 0){
-						int K = pop(&my_stack);
-						printf("%c", K);
+					if (C != 1){
+						finalK = TABLE[C]->character;
+						printf("%c", finalK);	
+						while (my_stack->character != 0){
+							int K = pop(&my_stack);
+							printf("%c", K);
+						}
 					}
+					
+					
 
-					if (oldC != 0){
+					if (oldC != 0 || C == 1){
+						//printf("%d %d\n", finalK, oldC);
 						TABLE[CURRENT_CODE] = new_trie(finalK, oldC);
 						int to_insert;
 						int num_children = TABLE[oldC]->num_children;
@@ -193,7 +206,9 @@ int main (int argc, char** argv){
 						insert(index, oldC, CURRENT_CODE);
 						CURRENT_CODE += 1;
 					}
-					oldC = newC;
+					if (C != 1){
+						oldC = newC;
+					}
 					newC = getBits(9);
 					C = newC;
 				}
