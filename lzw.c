@@ -26,6 +26,7 @@ int midpoint(int min_index, int max_index);
 void print_array(struct Trie** array, int length);
 void print_trie(struct Trie *my_trie, char* so_far);
 struct Trie* initialize_trie();
+void free_trie(struct Trie* my_trie);
 
 int main (int argc, char** argv){
 		//first you want to test the functionality of the trie
@@ -44,6 +45,11 @@ continue;
 				returned = getBits(8);
 		}
 		where_at = add_substring(where_at, returned);
+		
+		// let's try this decode thing
+
+		
+
 		//print_trie(root, "");
 
 		
@@ -179,5 +185,17 @@ void print_trie(struct Trie *my_trie, char* so_far){
 						memcpy(new_string+length, &(children[i]->character), sizeof(char));
 						print_trie(children[i], new_string);
 				}
+		return;
+}
+
+void free_trie(struct Trie* my_trie){
+		// you need to free both and Trie and the array
+		for (int i = 0; i < my_trie->num_children; i++){
+				free_trie((my_trie->children)[i]);
+		}
+		if (my_trie->children != NULL){
+				free(my_trie->children);
+		}
+		free(my_trie);	
 		return;
 }
