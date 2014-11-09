@@ -49,6 +49,7 @@ void free_single_trie(int index);
 void pruned_table(int* where_look, int how_many);
 struct Trie* create_new_entry(int* where_look, int index);
 void do_prune(int initialize);
+int new_num_bits(int how_many);
 
 // TODO
 // modify to put out and read MAXBITS:
@@ -157,9 +158,13 @@ int main (int argc, char** argv){
 						if (num_bits == MAXBITS){
 							//table_stderr();
 							do_prune(initialize);
+							//table_stderr();
+							//return 0;
 							//fprintf(stderr, "------------------------------------\n");
-							table_stderr();
-							return 0;
+							//table_stderr();
+							num_bits = new_num_bits(CURRENT_CODE);
+							fprintf(stderr, "num new bits is %d\n", num_bits);
+							//table_stderr();
 						} else {
 							num_bits += 1;
 							new_table(num_bits);
@@ -490,6 +495,16 @@ int add_substring(int where_at, int character, int num_bits){
 int binary_search(int index, int key, int min_index, int max_index, int* to_insert){
 		struct Trie* entry = TABLE[index];
 		int* children = entry->children;
+		//fprintf(stderr, "index is: %d\n", index);
+		//fprintf(stderr, "index is: %d\n", index);
+		/*
+		if (index != 0){
+		for(int i = 0; i < entry->num_children; i++){
+			fprintf(stderr, "%d ", TABLE[children[i]]);
+		}
+	}
+	*/
+		//fprintf(stderr, "\n");
 		if (max_index < min_index){
 				*to_insert = TRUE;
 				return min_index;
@@ -530,7 +545,11 @@ void table_stderr(){
 	fprintf(stderr, "i,Pref[i],Char[i],Used[i]\n");
 	for (int i = 3; i < CURRENT_CODE; i++){
 		struct Trie* of_interest = TABLE[i];
-		fprintf(stderr, "%d,%d,%d,%d\n", i, of_interest->prefix_code, of_interest->character, of_interest->num_appearances);
+		fprintf(stderr, "%d,%d,%d,%d,%d\n", i, of_interest->prefix_code, of_interest->character, of_interest->num_appearances, of_interest->num_children);
+		/*for (int j = 0; j < of_interest->num_children; j++){
+			fprintf(stderr, "%d ", (of_interest->children)[j]);
+		}*/
+		//fprintf(stderr, "\n");
 	}
 }
 
@@ -580,51 +599,76 @@ void free_single_trie(int index){
 // step 2: go through again and make the new entries
 
 void pruned_table(int* where_look, int how_many){
-	struct Trie** to_return = calloc(how_many, sizeof(struct Trie*));
-	to_return[0] = TABLE[0];
+	struct Trie** to_return = calloc(1<<new_num_bits(how_many), sizeof(struct Trie*));
+	to_return[0] = create_new_entry(where_look, 0);
 	to_return[1] = TABLE[1];
-	int so_far = 3;
+	//fprintf(stderr, "aaaaaaaaa\n");
 	for (int i = 3; i < CURRENT_CODE; i++){
 		if (where_look[i] == -1){
 			continue;
 		}
-		to_return[so_far] = create_new_entry(where_look, i);
-		so_far += 1;
+		to_return[where_look[i]] = create_new_entry(where_look, i);
+		//fprintf(stderr, "new index is %d\n", where_look[i]);
+		//fprintf(stderr, "%d %d\n", where_look[i], so_far);
 	}
 	CURRENT_CODE = how_many;
 	free(TABLE);
 	TABLE = to_return;
-	fprintf(stderr, "found %d instances\n", so_far);
+	//fprintf(stderr, "found %d instances\n", so_far);
 }
 
 // you know it's there still
 struct Trie* create_new_entry(int* where_look, int index){
 	struct Trie* of_interest = TABLE[index];
-	of_interest->num_appearances /= 2;
-	of_interest->prefix_code = where_look[of_interest->prefix_code];
+	struct Trie* to_return = calloc(1, sizeof(struct Trie));
+	to_return->num_appearances = (of_interest->num_appearances)/2;
+	to_return->prefix_code = where_look[of_interest->prefix_code];
+	to_return->character = of_interest->character;
 	int num_children = of_interest->num_children;
 	int* new_children = calloc(num_children, sizeof(int));
 	int* children = of_interest->children;
 	int num_new_children = 0;
 	int potential_new;
+	//fprintf(stderr, "current index is %d\n", index);
 	for (int j = 0; j < num_children; j++){
+		//fprintf(stderr, "%d ", children[j]);
 		potential_new = where_look[children[j]];
 		if (potential_new != -1){
+			//fprintf(stderr, "yes: %d", potential_new);
 			new_children[num_new_children] = potential_new;
 			num_new_children += 1;
 		}
+		//fprintf(stderr, "\n");
 	}
+	//fprintf(stderr, "-----------------\n");
+	//fprintf(stderr, "new array is\n");
+	//fprintf(stderr, "new array 2 is\n");
+	//new_children = realloc(new_children, sizeof(int)*num_new_children);
+
+	int* replacement_children = calloc(num_new_children, sizeof(int));
+	memcpy(replacement_children, new_children, num_new_children*sizeof(int));
 	free(children);
-	new_children = realloc(new_children, num_new_children*sizeof(int));
-	of_interest->children = new_children;
-	return of_interest;
+	free(new_children);
+	free(of_interest);
+	//new_children = realloc(new_children, num_new_children*sizeof(int));
+	to_return->children = replacement_children;
+	to_return->num_children = num_new_children;
+	return to_return;
 }
 
 void do_prune(int initialize){
 	int num_remaining;
-
 	int* lookup_table = new_indices(&num_remaining, initialize);
 	pruned_table(lookup_table, num_remaining);
-	fprintf(stderr, "size of new table is: %d\nCURRENT CODE is: %d\n", num_remaining, CURRENT_CODE);
+	//fprintf(stderr, "size of new table is: %d\nCURRENT CODE is: %d\n", num_remaining, CURRENT_CODE);
 }
 
+int new_num_bits(int how_many){
+	int holder = how_many;
+	int to_return = 0;
+	while (holder != 0){
+		holder /= 2;
+		to_return += 1;
+	}
+	return to_return;
+}
