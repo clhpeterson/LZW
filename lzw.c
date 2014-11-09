@@ -48,6 +48,7 @@ int* new_indices(int* number_remaining, int initialize);
 void free_single_trie(int index);
 void pruned_table(int* where_look, int how_many);
 struct Trie* create_new_entry(int* where_look, int index);
+void do_prune(int initialize);
 
 // TODO
 // modify to put out and read MAXBITS:
@@ -153,13 +154,24 @@ int main (int argc, char** argv){
 			while(returned != EOF){
 				if (!FULL){
 					if (CURRENT_CODE >= 1<<num_bits){
+						if (num_bits == MAXBITS){
+							//table_stderr();
+							do_prune(initialize);
+							//fprintf(stderr, "------------------------------------\n");
+							table_stderr();
+							return 0;
+						} else {
+							num_bits += 1;
+							new_table(num_bits);
+						}
+						/*
 						if(num_bits == MAXBITS){
 							FULL = TRUE;
 							//fprintf(stderr, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n");
 						} else {
 							num_bits += 1;
 							new_table(num_bits);
-						}
+						}*/
 						
 					}
 				}
@@ -553,7 +565,7 @@ int* new_indices(int* number_remaining, int initialize){
 			counter += 1;
 		}
 	}
-	*number_remaining = where_start+counter;
+	*number_remaining = counter;
 	return to_return;
 }
 
@@ -582,6 +594,7 @@ void pruned_table(int* where_look, int how_many){
 	CURRENT_CODE = how_many;
 	free(TABLE);
 	TABLE = to_return;
+	fprintf(stderr, "found %d instances\n", so_far);
 }
 
 // you know it's there still
@@ -605,5 +618,13 @@ struct Trie* create_new_entry(int* where_look, int index){
 	new_children = realloc(new_children, num_new_children*sizeof(int));
 	of_interest->children = new_children;
 	return of_interest;
+}
+
+void do_prune(int initialize){
+	int num_remaining;
+
+	int* lookup_table = new_indices(&num_remaining, initialize);
+	pruned_table(lookup_table, num_remaining);
+	fprintf(stderr, "size of new table is: %d\nCURRENT CODE is: %d\n", num_remaining, CURRENT_CODE);
 }
 
