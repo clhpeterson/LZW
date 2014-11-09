@@ -44,6 +44,10 @@ void free_table();
 void new_table(int new_bits);
 void free_stack(struct Stack* my_stack);
 void table_stderr();
+int* new_indices(int* number_remaining, int initialize);
+void free_single_trie(int index);
+void pruned_table(int* where_look, int how_many);
+struct Trie* create_new_entry(int* where_look, int index);
 
 // TODO
 // modify to put out and read MAXBITS:
@@ -517,3 +521,89 @@ void table_stderr(){
 		fprintf(stderr, "%d,%d,%d,%d\n", i, of_interest->prefix_code, of_interest->character, of_interest->num_appearances);
 	}
 }
+
+//step 1: malloc new thing; go through table and check if num_appearances is good;
+// initialization is a little bit trick. you will deal with it after you've dealt with
+// the uninitialized entries
+
+
+int* new_indices(int* number_remaining, int initialize){
+	int* to_return = calloc(CURRENT_CODE, sizeof(int));
+	to_return[0] = 0;
+	struct Trie* of_interest;
+	int counter;
+	int where_start;
+	if (initialize){
+		where_start = 256+3;
+		counter = 256+3;
+	} else {
+		where_start = 3;
+		counter = 3;
+	}
+	for (int i = 3; i < where_start; i++){
+		to_return[i] = i;
+	}
+	for (; where_start < CURRENT_CODE; where_start++){
+		of_interest = TABLE[where_start];
+		if (of_interest->num_appearances <= 1){
+			free_single_trie(where_start);
+			to_return[where_start] = -1;
+		} else {
+			to_return[where_start] = counter;
+			counter += 1;
+		}
+	}
+	*number_remaining = where_start+counter;
+	return to_return;
+}
+
+void free_single_trie(int index){
+	struct Trie* of_interest = TABLE[index];
+	if (of_interest != NULL){
+		free(of_interest->children);
+	}
+	free(of_interest);
+}
+
+// step 2: go through again and make the new entries
+
+void pruned_table(int* where_look, int how_many){
+	struct Trie** to_return = calloc(how_many, sizeof(struct Trie*));
+	to_return[0] = TABLE[0];
+	to_return[1] = TABLE[1];
+	int so_far = 3;
+	for (int i = 3; i < CURRENT_CODE; i++){
+		if (where_look[i] == -1){
+			continue;
+		}
+		to_return[so_far] = create_new_entry(where_look, i);
+		so_far += 1;
+	}
+	CURRENT_CODE = how_many;
+	free(TABLE);
+	TABLE = to_return;
+}
+
+// you know it's there still
+struct Trie* create_new_entry(int* where_look, int index){
+	struct Trie* of_interest = TABLE[index];
+	of_interest->num_appearances /= 2;
+	of_interest->prefix_code = where_look[of_interest->prefix_code];
+	int num_children = of_interest->num_children;
+	int* new_children = calloc(num_children, sizeof(int));
+	int* children = of_interest->children;
+	int num_new_children = 0;
+	int potential_new;
+	for (int j = 0; j < num_children; j++){
+		potential_new = where_look[children[j]];
+		if (potential_new != -1){
+			new_children[num_new_children] = potential_new;
+			num_new_children += 1;
+		}
+	}
+	free(children);
+	new_children = realloc(new_children, num_new_children*sizeof(int));
+	of_interest->children = new_children;
+	return of_interest;
+}
+
