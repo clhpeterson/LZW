@@ -137,8 +137,10 @@ int main (int argc, char** argv){
 			int caught = 0;
 			int returned = getBits(8);
 
+			fprintf(stderr, "%d:%d:%d:", MAXBITS, prune, !initialize);
+
 			while(returned != EOF){
-				if (CURRENT_CODE >= 1<<num_bits){
+				if (CURRENT_CODE > 1<<num_bits){
 					num_bits += 1;
 					new_table(num_bits);
 				}
@@ -158,12 +160,18 @@ int main (int argc, char** argv){
 				returned = getBits(8);
 			}
 			if (where_at != 0){
+				putBits(num_bits, where_at);
+				fprintf(stderr, "%d:%d\n", num_bits, where_at);
+				/*
 				where_at = add_substring(where_at, returned, num_bits);
 				if (where_at == -1){
 					CURRENT_CODE += 1;
 				}
+				*/
 			}
 			putBits(num_bits, 2);
+			fprintf(stderr, "%d:%d\n", num_bits, 2);
+			//table_stderr();
 			//printf("2\n");
 			//printf("%d\n", CURRENT_CODE);
 			//int last_char = get_prefix(267);
@@ -195,16 +203,18 @@ int main (int argc, char** argv){
 				CURRENT_CODE = 3;
 				TABLE[1] = new_trie(-1, 0);
 			}
-			int newC = getBits(num_bits);
+			// int newC = getBits(num_bits);
 			int oldC = 0;
+			int newC;
 			int C = newC;
 			int prefix;
 			int finalK;
+			fprintf(stderr, "%d:%d:%d:", MAXBITS, initialize, prune);
 
 			struct Stack* my_stack = initialize_stack();
-			while (newC != 2){
+			while ((C=getBits(num_bits)) != EOF){
 				//fprintf(stderr, "%d %d\n", CURRENT_CODE, C);
-				C = newC;
+				newC = C;
 				if (C == 1){
 					finalK = getBits(8);
 					printf("%c", finalK);
@@ -237,7 +247,7 @@ int main (int argc, char** argv){
 					insert(index, oldC, CURRENT_CODE);
 					CURRENT_CODE += 1;
 				}
-				if (CURRENT_CODE >= (1<<num_bits)-1){
+				if (CURRENT_CODE >= (1<<num_bits)){
 					num_bits += 1;
 					//fprintf(stderr, "new num bits is: %d\n", num_bits);
 					new_table(num_bits);
@@ -260,10 +270,10 @@ int main (int argc, char** argv){
 					//fprintf(stderr, "new num bits is: %d\n", num_bits);
 					new_table(num_bits);
 				}
-				newC = getBits(num_bits);
+				// newC = C
 			}
 
-			//table_stderr();
+			table_stderr();
 			free_table();
 			free_stack(my_stack);
 			return 0;
@@ -361,9 +371,11 @@ int add_substring(int where_at, int character, int num_bits){
 				//fprintf(stderr, "%d 1 %d\n", CURRENT_CODE, character);
 				putBits(num_bits, 1);
 				putBits(8, character);
+				fprintf(stderr, "%d:%d\n", num_bits, 1);
+				fprintf(stderr, "8:%d\n", character);
 			} else {
 				//printf("%d\n", where_at);
-				//fprintf(stderr, "%d %d\n", CURRENT_CODE, where_at);
+				fprintf(stderr, "%d:%d\n", num_bits, where_at);
 				putBits(num_bits, where_at);
 			}
 			TABLE[CURRENT_CODE] = to_insert;
