@@ -90,6 +90,9 @@ int main (int argc, char** argv){
 										fprintf(stderr, "you need a number after -m\n");
 										return 0;
 								}
+								if (caught <= 0){
+									fprintf(stderr, "you need a positive number after -m\n");
+								}
 								if (caught > 8 && caught <= 20){
 										MAXBITS = caught;
 								}
@@ -140,13 +143,17 @@ int main (int argc, char** argv){
 
 			
 
+
+
+
 			while(returned != EOF){
 				if (!FULL){
 					if (CURRENT_CODE >= 1<<num_bits){
-						num_bits += 1;
-						if (num_bits == MAXBITS+1){
+						if(num_bits == MAXBITS){
 							FULL = TRUE;
+							//fprintf(stderr, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n");
 						} else {
+							num_bits += 1;
 							new_table(num_bits);
 						}
 						
@@ -175,10 +182,12 @@ int main (int argc, char** argv){
 			if (where_at != 0){
 				where_at = add_substring(where_at, returned, num_bits);
 				if (where_at == -1){
-					CURRENT_CODE += 1;
+					if (!FULL){
+						CURRENT_CODE += 1;
+					}
 				}
 			}
-			if (CURRENT_CODE >= 1<< num_bits){
+			if (CURRENT_CODE >= 1<< num_bits && !FULL){
 				num_bits += 1;
 			}
 			//fprintf(stderr, "%d 2 %d\n", CURRENT_CODE, num_bits);
@@ -223,7 +232,7 @@ int main (int argc, char** argv){
 			struct Stack* my_stack = initialize_stack();
 
 
-
+			int one_more = FALSE;
 			while (newC != 2){
 				/*
 				if (C == 1){
@@ -240,12 +249,20 @@ int main (int argc, char** argv){
 */
 
 
+				// if CURRENT_CODE = (1<<num_bits)-1, then you know there's only one entry left in the 
+				// table. you need to be able to 
+
+				
 
 
 				//fprintf(stderr, "%d %d %d\n", CURRENT_CODE, C, num_bits);
+				fprintf(stderr, "%d\n", C);
 				if (C == 1){
 					finalK = getBits(8);
 					printf("%c", finalK);
+					if (FULL == TRUE){
+						//printf("aaaaaaaaaaaaaaaa\n");
+					}
 					//fprintf(stderr, "character is %d %d\n", finalK, oldC);
 				}
 				if (C >= CURRENT_CODE){
@@ -253,115 +270,84 @@ int main (int argc, char** argv){
 					C = oldC;
 				}
 				prefix = TABLE[C]->prefix_code;
+				//fprintf(stderr, "---------------\n");
 				while (prefix != 0){
 					//fprintf(stderr, "prefix is %d\n", C);
+					//fprintf(stderr, "%d\n", C);
 					my_stack = push(TABLE[C]->character, my_stack);
 					C = prefix;
 					prefix = TABLE[C]->prefix_code;
 				}
 				if (C != 1){
+					//fprintf(stderr, "\n%d %d %d\n", newC, C, oldC);
 					finalK = TABLE[C]->character;
 					printf("%c", finalK);
+					//fprintf(stderr, "%c", finalK);
 					while (my_stack->character != -1){
 						int K = pop(&my_stack);
+						//fprintf(stderr, "%c", K);
 						printf("%c", K);
 					}
+					
 				}
 				if (oldC != 0){
-					TABLE[CURRENT_CODE] = new_trie(finalK, oldC);
-					int to_insert;
-					int num_children = TABLE[oldC]->num_children;
-					int index = binary_search(oldC, finalK, 0, num_children-1, &to_insert);
-					insert(index, oldC, CURRENT_CODE);
-					//fprintf(stderr, "here: %d\n", CURRENT_CODE);
-					CURRENT_CODE += 1;
+					if (!FULL || one_more){
+						TABLE[CURRENT_CODE] = new_trie(finalK, oldC);
+						int to_insert;
+						int num_children = TABLE[oldC]->num_children;
+						int index = binary_search(oldC, finalK, 0, num_children-1, &to_insert);
+						insert(index, oldC, CURRENT_CODE);
+						//fprintf(stderr, "here: %d\n", CURRENT_CODE);
+						CURRENT_CODE += 1;
+						one_more = FALSE;
+					}
 				}
-				if (CURRENT_CODE >= (1<<num_bits)-1){
-					num_bits += 1;
+				if (CURRENT_CODE == (1<<num_bits)-1){
+					if (num_bits == MAXBITS){
+						FULL = TRUE;
+						one_more = TRUE;
+						//printf("aaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n");
+					} else {
+						num_bits += 1;
+						new_table(num_bits);
+					}
 					//fprintf(stderr, "new num bits is: %d\n", num_bits);
-					new_table(num_bits);
 				}
-				if (C == 1){
+				if (C == 1 || one_more){
 					//fprintf(stderr, "%d %d\n", CURRENT_CODE, finalK);
 					oldC = 0;
-					TABLE[CURRENT_CODE] = new_trie(finalK, oldC);
-					int to_insert;
-					int num_children = TABLE[oldC]->num_children;
-					int index = binary_search(oldC, finalK, 0, num_children-1, &to_insert);
-					insert(index, oldC, CURRENT_CODE);
-					CURRENT_CODE += 1;
-				}
-				if (C != 1){
-					oldC = newC;
-				}
-				if (CURRENT_CODE >= (1<<num_bits)){
-					num_bits += 1;
-					//fprintf(stderr, "new num bits is: %d\n", num_bits);
-					new_table(num_bits);
-				}
-				newC = getBits(num_bits);
-				C = newC;
-			}
-
-
-
-
-			/*
-			while (newC != 2){
-				//printf("\nnewC is: %d\n", newC);
-				fprintf(stderr, "%d %d\n", CURRENT_CODE, newC);
-				
-				// then we know we have an escaped character
-				if (C == 1){
-					finalK = getBits(8);
-					printf("%c", finalK);
-					fprintf(stderr, "character code is %d\n", finalK);
-				}
-
-				if (C >= CURRENT_CODE){
-					my_stack = push(finalK, my_stack);
-					C = oldC;
-				}
-
-				if (C != 1){
-					prefix = TABLE[C]->prefix_code;
-					while (prefix != 0){
-						my_stack = push(TABLE[C]->character, my_stack);
-						C = prefix;
-						//fprintf(stderr, "new prefix is: %d\n", C);
-						prefix = TABLE[C]->prefix_code;
+					if (!FULL){
+						TABLE[CURRENT_CODE] = new_trie(finalK, oldC);
+						int to_insert;
+						int num_children = TABLE[oldC]->num_children;
+						int index = binary_search(oldC, finalK, 0, num_children-1, &to_insert);
+						insert(index, oldC, CURRENT_CODE);
+						CURRENT_CODE += 1;
+						one_more = FALSE;
 					}
-					finalK = TABLE[C]->character;
-					printf("%c", finalK);	
-					while (my_stack->character != -1){
-						int K = pop(&my_stack);
-						printf("%c", K);
-					}	
-				}
-
-				if (oldC != 0 || C == 1){
-					TABLE[CURRENT_CODE] = new_trie(finalK, oldC);
-					int to_insert;
-					int num_children = TABLE[oldC]->num_children;
-					int index = binary_search(oldC, finalK, 0, num_children-1, &to_insert);
-					insert(index, oldC, CURRENT_CODE);
-					CURRENT_CODE += 1;
-					//fprintf(stderr, "CODE is now: %d\n", CURRENT_CODE);
 				}
 				if (C != 1){
 					oldC = newC;
-				} else {
-					oldC = 0;
 				}
-				if (CURRENT_CODE >= (1<<num_bits)){
-					num_bits += 1;
-					fprintf(stderr, "new num bits is: %d\n", num_bits);
-					new_table(num_bits);
+				if (CURRENT_CODE == (1<<num_bits)){
+					if(num_bits == MAXBITS){
+						FULL = TRUE;
+						one_more = TRUE;
+						//printf("aaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n");
+					} else {
+						num_bits += 1;
+						new_table(num_bits);
+					}
+					//fprintf(stderr, "new num bits is: %d\n", num_bits);
 				}
 				newC = getBits(num_bits);
 				C = newC;
 			}
-			*/
+
+
+
+
+			
 			//table_stderr();
 			free_table();
 			free_stack(my_stack);
@@ -460,7 +446,7 @@ int add_substring(int where_at, int character, int num_bits){
 			
 			if (where_at == 0){
 				//printf("1\n%d\n", character);
-				fprintf(stderr, "%d 1 %d\n", CURRENT_CODE, character);
+				fprintf(stderr, "%d 1\n%d\n", CURRENT_CODE, character);
 				putBits(num_bits, 1);
 				putBits(8, character);
 			} else {
