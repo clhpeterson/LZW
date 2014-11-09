@@ -6,11 +6,14 @@ HWK = /c/cs323/Hwk2
 SOURCES = lzw.c
 
 OBJECTS = $(SOURCES:.c=.o) ${HWK}/code.o
+all = lzw encode decode
 
-TARGET = lzw
+TARGETS = lzw
 
-$(TARGET): $(OBJECTS)
+$(TARGETS): $(OBJECTS)
 	${CC} ${CFLAGS} -o $@ $^
+	ln -f lzw encode
+	ln -f lzw decode
 
 %.o: %.c
 	${CC} ${CFLAGS} -c $< -o $@

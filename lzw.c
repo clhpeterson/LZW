@@ -31,7 +31,7 @@ struct Trie** TABLE;
 
 struct Trie* new_trie(int character, int prefix_code);
 void initialize_table();
-int add_substring(int where_at, int character);
+int add_substring(int where_at, int character, int num_bits);
 int binary_search(int index, int key, int min_index, int max_index, int* to_insert);
 int midpoint(int min_index, int max_index);
 //int get_prefix(int where_at);
@@ -39,19 +39,28 @@ void insert(int int_index, int table_index, int value);
 struct Stack* initialize_stack();
 struct Stack* push(int character, struct Stack* current);
 int pop(struct Stack** current);
+void free_table();
+void new_table(int new_bits);
+void free_stack(struct Stack* my_stack);
+void table_stderr();
+
+// TODO
+// modify to put out and read MAXBITS:
+
 
 int main (int argc, char** argv){
 		//first you want to test the functionality of the trie
 		// let's do the command line processing
-		if (argc == 1){
-				fprintf(stderr, "too few arguments\n");
-				return 0;
-		}
 		int encode;
 		int prune = FALSE;
 		int initialize = TRUE;
-		if (strcmp(argv[1],  "decode") == 0){
-				if (argc > 2){
+		int length_first_arg = strlen(argv[0]);
+		// TODO what if you have another file called decode symlinked to encode?
+		if (length_first_arg < 6){
+			fprintf(stderr, "invalid first parameter\n");
+		}
+		if (strcmp(argv[0]+length_first_arg-6,  "decode") == 0){
+				if (argc > 1){
 						fprintf(stderr, "you shouldn't have arguments after decode\n");
 						return 0;
 				}
@@ -59,12 +68,12 @@ int main (int argc, char** argv){
 		}
 
 		else{
-				if (strcmp(argv[1], "encode") != 0){
+				if (strcmp(argv[0]+length_first_arg-6, "encode") != 0){
 						fprintf(stderr, "no encode or decode paramter!\n");
 						return 0;
 				}
 				encode = TRUE;
-				int i = 2;
+				int i = 1;
 				while (i < argc){
 						char *of_interest = argv[i];
 						if (strcmp(of_interest, "-m") == 0){
@@ -107,24 +116,36 @@ int main (int argc, char** argv){
 		}
 		
 		if (encode){
-			TABLE = calloc(512, sizeof(struct Trie*));
-
+			int num_bits;
 			if (initialize){
+				num_bits = 9;
+				TABLE = calloc(1<<num_bits, sizeof(struct Trie*));
 				CURRENT_CODE = 256+3;
 				initialize_table();				
 			} else {
+				num_bits = 2;
+				TABLE = calloc(1<<num_bits, sizeof(struct Trie*));
 				TABLE[0] = new_trie(-1, -1);
-				CURRENT_CODE = 3;	
+				CURRENT_CODE = 3;
 			}
+
+			putBits(5, MAXBITS);
+			putBits(1, initialize);
+			putBits(1, prune);
 
 			int where_at = 0;
 			int caught = 0;
 			int returned = getBits(8);
 
 			while(returned != EOF){
+				if (CURRENT_CODE >= 1<<num_bits){
+					num_bits += 1;
+					new_table(num_bits);
+				}
+				//fprintf(stderr, "%d\n", CURRENT_CODE);
 				// add_substring returns NULL if it inserts it, or else returns the entry where the next character was found
 				// with the -e flag, you need to check if add_substring returns null 
-				caught = add_substring(where_at, returned);
+				caught = add_substring(where_at, returned, num_bits);
 				if (caught == -1){
 					CURRENT_CODE += 1;
 					if (where_at != 0){
@@ -137,81 +158,170 @@ int main (int argc, char** argv){
 				returned = getBits(8);
 			}
 			if (where_at != 0){
-				where_at = add_substring(where_at, returned);
+				where_at = add_substring(where_at, returned, num_bits);
+				if (where_at == -1){
+					CURRENT_CODE += 1;
+				}
 			}
-			putBits(9, 2);
+			putBits(num_bits, 2);
 			//printf("2\n");
 			//printf("%d\n", CURRENT_CODE);
 			//int last_char = get_prefix(267);
 			//printf("\n");
 			//printf("%c\n", last_char);
+			free_table();
 			return 0;
 		}
 
 
 		else{
-			TABLE = calloc(512, sizeof(struct Trie*));
-			initialize = FALSE;
+			MAXBITS = getBits(5);
+			initialize = getBits(1);
+			prune = getBits(1);
+			int num_bits;
+			//printf("MAXBITS: %d\n-e: %d\n-p: %d\n", MAXBITS, initialize, prune);
 			if (initialize){
+				num_bits = 9;
+				TABLE = calloc(1<<num_bits, sizeof(struct Trie*));
 				initialize_table();
 				CURRENT_CODE = 256+3;
 			} else {
+				num_bits = 2;
+				TABLE = calloc(1<<num_bits, sizeof(struct Trie*));
 				TABLE[0] = new_trie(-1, -1);
 				CURRENT_CODE = 3;
 				TABLE[1] = new_trie(-1, 0);
 			}
-			int newC = getBits(9);
+			int newC = getBits(num_bits);
 			int oldC = 0;
 			int C = newC;
 			int prefix;
 			int finalK;
 
 			struct Stack* my_stack = initialize_stack();
-			while (newC != EOF){
-
+			while (newC != 2){
+				fprintf(stderr, "%d %d\n", CURRENT_CODE, C);
 				if (C == 1){
-					finalK = getBits(9);
+					finalK = getBits(8);
 					printf("%c", finalK);
+					fprintf(stderr, "character is %d %d\n", finalK, oldC);
+				}
+				if (C >= CURRENT_CODE){
+					my_stack = push(finalK, my_stack);
+					C = oldC;
+				}
+				prefix = TABLE[C]->prefix_code;
+				while (prefix != 0){
+					//fprintf(stderr, "prefix is %d\n", C);
+					my_stack = push(TABLE[C]->character, my_stack);
+					C = prefix;
+					prefix = TABLE[C]->prefix_code;
+				}
+				if (C != 1){
+					finalK = TABLE[C]->character;
+					printf("%c", finalK);
+					while (my_stack->character != -1){
+						int K = pop(&my_stack);
+						printf("%c", K);
+					}
+				}
+				if (oldC != 0){
+					TABLE[CURRENT_CODE] = new_trie(finalK, oldC);
+					int to_insert;
+					int num_children = TABLE[oldC]->num_children;
+					int index = binary_search(oldC, finalK, 0, num_children-1, &to_insert);
+					insert(index, oldC, CURRENT_CODE);
+					CURRENT_CODE += 1;
+				}
+				if (CURRENT_CODE >= (1<<num_bits)-1){
+					num_bits += 1;
+					fprintf(stderr, "new num bits is: %d\n", num_bits);
+					new_table(num_bits);
+				}
+				if (C == 1){
+					fprintf(stderr, "%d %d\n", CURRENT_CODE, finalK);
+					oldC = 0;
+					TABLE[CURRENT_CODE] = new_trie(finalK, oldC);
+					int to_insert;
+					int num_children = TABLE[oldC]->num_children;
+					int index = binary_search(oldC, finalK, 0, num_children-1, &to_insert);
+					insert(index, oldC, CURRENT_CODE);
+					CURRENT_CODE += 1;
+				}
+				if (C != 1){
+					oldC = newC;
+				}
+				if (CURRENT_CODE >= (1<<num_bits)){
+					num_bits += 1;
+					fprintf(stderr, "new num bits is: %d\n", num_bits);
+					new_table(num_bits);
+				}
+				newC = getBits(num_bits);
+				C = newC;
+			}
+
+
+
+
+			/*
+			while (newC != 2){
+				//printf("\nnewC is: %d\n", newC);
+				fprintf(stderr, "%d %d\n", CURRENT_CODE, newC);
+				
+				// then we know we have an escaped character
+				if (C == 1){
+					finalK = getBits(8);
+					printf("%c", finalK);
+					fprintf(stderr, "character code is %d\n", finalK);
 				}
 
 				if (C >= CURRENT_CODE){
 					my_stack = push(finalK, my_stack);
 					C = oldC;
-					
 				}
+
+				if (C != 1){
 					prefix = TABLE[C]->prefix_code;
 					while (prefix != 0){
 						my_stack = push(TABLE[C]->character, my_stack);
 						C = prefix;
+						//fprintf(stderr, "new prefix is: %d\n", C);
 						prefix = TABLE[C]->prefix_code;
 					}
-
-					if (C != 1){
-						finalK = TABLE[C]->character;
-						printf("%c", finalK);	
-						while (my_stack->character != 0){
-							int K = pop(&my_stack);
-							printf("%c", K);
-						}
-					}
-					
-					
-
-					if (oldC != 0 || C == 1){
-						//printf("%d %d\n", finalK, oldC);
-						TABLE[CURRENT_CODE] = new_trie(finalK, oldC);
-						int to_insert;
-						int num_children = TABLE[oldC]->num_children;
-						int index = binary_search(oldC, finalK, 0, num_children-1, &to_insert);
-						insert(index, oldC, CURRENT_CODE);
-						CURRENT_CODE += 1;
-					}
-					if (C != 1){
-						oldC = newC;
-					}
-					newC = getBits(9);
-					C = newC;
+					finalK = TABLE[C]->character;
+					printf("%c", finalK);	
+					while (my_stack->character != -1){
+						int K = pop(&my_stack);
+						printf("%c", K);
+					}	
 				}
+
+				if (oldC != 0 || C == 1){
+					TABLE[CURRENT_CODE] = new_trie(finalK, oldC);
+					int to_insert;
+					int num_children = TABLE[oldC]->num_children;
+					int index = binary_search(oldC, finalK, 0, num_children-1, &to_insert);
+					insert(index, oldC, CURRENT_CODE);
+					CURRENT_CODE += 1;
+					//fprintf(stderr, "CODE is now: %d\n", CURRENT_CODE);
+				}
+				if (C != 1){
+					oldC = newC;
+				} else {
+					oldC = 0;
+				}
+				if (CURRENT_CODE >= (1<<num_bits)){
+					num_bits += 1;
+					fprintf(stderr, "new num bits is: %d\n", num_bits);
+					new_table(num_bits);
+				}
+				newC = getBits(num_bits);
+				C = newC;
+			}
+			*/
+			table_stderr();
+			free_table();
+			free_stack(my_stack);
 			return 0;
 		}
 		return 0;
@@ -220,7 +330,7 @@ int main (int argc, char** argv){
 
 struct Stack* initialize_stack(){
     struct Stack* to_return = calloc(1, sizeof(struct Stack));
-	to_return->character = 0;
+	to_return->character = -1;
 	to_return->last = NULL;
 	return to_return;
 }
@@ -240,19 +350,11 @@ int pop(struct Stack** current){
 	return to_return;
 }
 
-/*
-// returns the first character
-int get_prefix(int where_at){
-	int character = TABLE[where_at]->character;
-	if (TABLE[where_at]->prefix_code == 0){
-		printf("%c", character);
-		return character;
+void free_stack(struct Stack* my_stack){
+	while (my_stack != NULL){
+		pop(&my_stack);
 	}
-	int to_return = get_prefix(TABLE[where_at]->prefix_code);
-	printf("%c", character);
-	return to_return;
 }
-*/
 
 // int_index is the index in children
 // table_index is the index in TABLE
@@ -298,7 +400,7 @@ void initialize_table(){
 // you get the trie and a pointer to the next character. returns true if inserted, false otherwise
 // you need to modify this so that you instead return 
 // returns a pointer to subtrie. if it was inserted, 
-int add_substring(int where_at, int character){
+int add_substring(int where_at, int character, int num_bits){
 		struct Trie* entry = TABLE[where_at];
 		int num_children = entry->num_children;
 		int* children = entry->children;
@@ -312,11 +414,13 @@ int add_substring(int where_at, int character){
 			if (where_at == 0){
 
 				//printf("1\n%d\n", character);
-				putBits(9, 1);
-				putBits(9, character);
+				fprintf(stderr, "%d 1 %d\n", CURRENT_CODE, character);
+				putBits(num_bits, 1);
+				putBits(8, character);
 			} else {
 				//printf("%d\n", where_at);
-				putBits(9, where_at);
+				fprintf(stderr, "%d %d\n", CURRENT_CODE, where_at);
+				putBits(num_bits, where_at);
 			}
 			TABLE[CURRENT_CODE] = to_insert;
 			return -1;
@@ -351,4 +455,26 @@ int binary_search(int index, int key, int min_index, int max_index, int* to_inse
 
 int midpoint(int min_index, int max_index){
 		return min_index+(max_index-min_index)/2;
+}
+
+void free_table(){
+	for(int i = 0; i < CURRENT_CODE; i++){
+		struct Trie* of_interest = TABLE[i];
+		if (of_interest != NULL){
+			free(of_interest->children);
+		}
+		free(of_interest);
+	}
+	free(TABLE);
+}
+
+void new_table(int new_bits){
+	TABLE = realloc(TABLE, (1<<new_bits)*sizeof(struct Trie*));
+}
+
+void table_stderr(){
+	for (int i = 3; i < CURRENT_CODE; i++){
+		struct Trie* of_interest = TABLE[i];
+		fprintf(stderr, "%d, %d, %d\n", i, of_interest->prefix_code, of_interest->character);
+	}
 }
