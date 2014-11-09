@@ -8,6 +8,7 @@
 
 int MAXBITS = 12;
 int CURRENT_CODE = 0;
+int FULL = FALSE;
 
 // the table in going to be a global variable
 
@@ -137,17 +138,31 @@ int main (int argc, char** argv){
 			int caught = 0;
 			int returned = getBits(8);
 
+			
+
 			while(returned != EOF){
-				if (CURRENT_CODE >= 1<<num_bits){
-					num_bits += 1;
-					new_table(num_bits);
+				if (!FULL){
+					if (CURRENT_CODE >= 1<<num_bits){
+						num_bits += 1;
+						if (num_bits == MAXBITS+1){
+							FULL = TRUE;
+						} else {
+							new_table(num_bits);
+						}
+						
+					}
 				}
+				
 				//fprintf(stderr, "%d\n", CURRENT_CODE);
 				// add_substring returns NULL if it inserts it, or else returns the entry where the next character was found
 				// with the -e flag, you need to check if add_substring returns null 
 				caught = add_substring(where_at, returned, num_bits);
+				// caught being -1 means that something could have been inserted
+				// and the code was emitted. if where_at is 0, then it was a new code. else it wasn't
 				if (caught == -1){
-					CURRENT_CODE += 1;
+					if (!FULL){
+						CURRENT_CODE += 1;
+					}
 					if (where_at != 0){
 						where_at = 0;
 						continue;
@@ -166,7 +181,7 @@ int main (int argc, char** argv){
 			if (CURRENT_CODE >= 1<< num_bits){
 				num_bits += 1;
 			}
-			fprintf(stderr, "%d 2 %d\n", CURRENT_CODE, num_bits);
+			//fprintf(stderr, "%d 2 %d\n", CURRENT_CODE, num_bits);
 			putBits(num_bits, 2);
 			flushBits();
 			//putBits(1, 1);
@@ -227,11 +242,11 @@ int main (int argc, char** argv){
 
 
 
-				fprintf(stderr, "%d %d %d\n", CURRENT_CODE, C, num_bits);
+				//fprintf(stderr, "%d %d %d\n", CURRENT_CODE, C, num_bits);
 				if (C == 1){
 					finalK = getBits(8);
 					printf("%c", finalK);
-					fprintf(stderr, "character is %d %d\n", finalK, oldC);
+					//fprintf(stderr, "character is %d %d\n", finalK, oldC);
 				}
 				if (C >= CURRENT_CODE){
 					my_stack = push(finalK, my_stack);
@@ -263,11 +278,11 @@ int main (int argc, char** argv){
 				}
 				if (CURRENT_CODE >= (1<<num_bits)-1){
 					num_bits += 1;
-					fprintf(stderr, "new num bits is: %d\n", num_bits);
+					//fprintf(stderr, "new num bits is: %d\n", num_bits);
 					new_table(num_bits);
 				}
 				if (C == 1){
-					fprintf(stderr, "%d %d\n", CURRENT_CODE, finalK);
+					//fprintf(stderr, "%d %d\n", CURRENT_CODE, finalK);
 					oldC = 0;
 					TABLE[CURRENT_CODE] = new_trie(finalK, oldC);
 					int to_insert;
@@ -281,7 +296,7 @@ int main (int argc, char** argv){
 				}
 				if (CURRENT_CODE >= (1<<num_bits)){
 					num_bits += 1;
-					fprintf(stderr, "new num bits is: %d\n", num_bits);
+					//fprintf(stderr, "new num bits is: %d\n", num_bits);
 					new_table(num_bits);
 				}
 				newC = getBits(num_bits);
@@ -347,7 +362,7 @@ int main (int argc, char** argv){
 				C = newC;
 			}
 			*/
-			table_stderr();
+			//table_stderr();
 			free_table();
 			free_stack(my_stack);
 			return 0;
@@ -436,11 +451,14 @@ int add_substring(int where_at, int character, int num_bits){
 		int index = binary_search(where_at, character, 0, num_children-1, &to_insert);
 		if (to_insert){
 			// this means that you need to add it
+			if (!FULL){
+				struct Trie* to_insert = new_trie(character, where_at);
+				insert(index, where_at, CURRENT_CODE);
+				TABLE[CURRENT_CODE] = to_insert;
+			}
 			
-			struct Trie* to_insert = new_trie(character, where_at);
-			insert(index, where_at, CURRENT_CODE);
+			
 			if (where_at == 0){
-
 				//printf("1\n%d\n", character);
 				fprintf(stderr, "%d 1 %d\n", CURRENT_CODE, character);
 				putBits(num_bits, 1);
@@ -450,7 +468,7 @@ int add_substring(int where_at, int character, int num_bits){
 				fprintf(stderr, "%d %d\n", CURRENT_CODE, where_at);
 				putBits(num_bits, where_at);
 			}
-			TABLE[CURRENT_CODE] = to_insert;
+
 			return -1;
 		}
 		else{
