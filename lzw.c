@@ -163,7 +163,14 @@ int main (int argc, char** argv){
 					CURRENT_CODE += 1;
 				}
 			}
+			if (CURRENT_CODE >= 1<< num_bits){
+				num_bits += 1;
+			}
+			fprintf(stderr, "%d 2 %d\n", CURRENT_CODE, num_bits);
 			putBits(num_bits, 2);
+			flushBits();
+			//putBits(1, 1);
+			//putBits(num_bits, 2);
 			//printf("2\n");
 			//printf("%d\n", CURRENT_CODE);
 			//int last_char = get_prefix(267);
@@ -199,8 +206,28 @@ int main (int argc, char** argv){
 			int finalK;
 
 			struct Stack* my_stack = initialize_stack();
+
+
+
 			while (newC != 2){
-				fprintf(stderr, "%d %d\n", CURRENT_CODE, C);
+				/*
+				if (C == 1){
+					finalK = getBits(8);
+				}
+				if (C >= CURRENT_CODE){
+					my_stack = push(finalK, my_stack);
+					C = oldC;
+				}
+				prefix = TABLE[C]->prefix_code;
+				while (prefix != 0){
+					my_stack = push(TABLE[C])
+				}
+*/
+
+
+
+
+				fprintf(stderr, "%d %d %d\n", CURRENT_CODE, C, num_bits);
 				if (C == 1){
 					finalK = getBits(8);
 					printf("%c", finalK);
@@ -231,6 +258,7 @@ int main (int argc, char** argv){
 					int num_children = TABLE[oldC]->num_children;
 					int index = binary_search(oldC, finalK, 0, num_children-1, &to_insert);
 					insert(index, oldC, CURRENT_CODE);
+					//fprintf(stderr, "here: %d\n", CURRENT_CODE);
 					CURRENT_CODE += 1;
 				}
 				if (CURRENT_CODE >= (1<<num_bits)-1){
