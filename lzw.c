@@ -211,10 +211,12 @@ int main (int argc, char** argv){
 						if (num_bits == MAXBITS){
 							//fprintf(stderr, "%d\n", where_at);
 							if (prune){
-								table_stderr();
+								//table_stderr();
 								//return 0;
 								//putBits(num_bits, returned);
+								table_stderr();
 								do_prune(initialize);
+								table_stderr();
 								//fprintf(stderr, "got here\n");
 								num_bits = new_num_bits(CURRENT_CODE);
 								//fprintf(stderr, "%d %d\n", CURRENT_CODE, num_bits);
@@ -468,6 +470,7 @@ int main (int argc, char** argv){
 						}
 						
 						int to_insert;
+						// fprintf(stderr, "%d\n", oldC);
 						int num_children = TABLE[oldC]->num_children;
 						int index = binary_search(oldC, finalK, 0, num_children-1, &to_insert);
 						insert(index, oldC, CURRENT_CODE);
@@ -487,9 +490,11 @@ int main (int argc, char** argv){
 						if (CURRENT_CODE == (1<<num_bits) && !FULL){
 							if (num_bits == MAXBITS){
 								if (prune){
-									//table_stderr();
-									//return 0;
+									// TABLE[CURRENT_CODE-1]->num_appearances += 1;
+									table_stderr();
 									do_prune(initialize);
+									table_stderr();
+									// return 0;
 									num_bits = new_num_bits(CURRENT_CODE);
 									oldC = 0;
 									newC = getBits(num_bits);
@@ -539,9 +544,11 @@ int main (int argc, char** argv){
 						if (CURRENT_CODE == (1<<num_bits) && !FULL){
 							if(num_bits == MAXBITS){
 								if (prune){
+									// return 0;
+									// printf("this is some text\n");
 									table_stderr();
-									//return 0;
 									do_prune(initialize);
+									table_stderr();
 									num_bits = new_num_bits(CURRENT_CODE);
 									oldC = 0;
 									one_more = FALSE;
