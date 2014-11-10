@@ -184,12 +184,17 @@ int main (int argc, char** argv){
 						//fprintf(stderr, "%d 1\n%d\n", CURRENT_CODE, character);
 						printf("%d:%d\n", num_bits, 1);
 						printf("%d:%d\n", 8, returned);
-						//putBits(num_bits, 1);
-						//putBits(8, character);
+						
+						/*
+						putBits(num_bits, 1);
+						putBits(8, returned);
+						*/
+
 					} else {
 						//printf("%d\n", where_at);
 						//fprintf(stderr, "%d %d\n", CURRENT_CODE, where_at);
 						printf("%d:%d\n", num_bits, where_at);
+						
 						//putBits(num_bits, where_at);
 					}
 				}
@@ -200,18 +205,20 @@ int main (int argc, char** argv){
 				}
 
 
-				//if (!FULL){
+				if (!FULL){
 				//printf("current code: %d\n", CURRENT_CODE);
 					if (CURRENT_CODE == (1<<num_bits) && to_insert){
 						if (num_bits == MAXBITS){
-							table_stderr();
-							do_prune(initialize);
+							//fprintf(stderr, "%d\n", where_at);
+							FULL = TRUE;
+							//table_stderr();
+							//do_prune(initialize);
 							//return 0;
 							//table_stderr();
 							//return 0;
 							//fprintf(stderr, "------------------------------------\n");
 							//table_stderr();
-							num_bits = new_num_bits(CURRENT_CODE);
+							//num_bits = new_num_bits(CURRENT_CODE);
 							//table_stderr();
 							//fprintf(stderr, "num new bits is %d\n", num_bits);
 							//table_stderr();
@@ -229,7 +236,7 @@ int main (int argc, char** argv){
 						}*/
 						
 					}
-				//}
+				}
 					//printf("num bits: %d\n", num_bits);
 
 				//printf("CURRENT CODE after checking is: %d\n\n", CURRENT_CODE);
@@ -245,16 +252,19 @@ int main (int argc, char** argv){
 				// and the code was emitted. if where_at is 0, then it was a new code. else it wasn't
 
 				if (to_insert){
-					struct Trie* new_entry = new_trie(returned, where_at, TRUE);
-					insert(index, where_at, CURRENT_CODE);
-					TABLE[CURRENT_CODE] = new_entry;
-					CURRENT_CODE += 1;
+					if (!FULL){
+						struct Trie* new_entry = new_trie(returned, where_at, TRUE);
+						insert(index, where_at, CURRENT_CODE);
+						TABLE[CURRENT_CODE] = new_entry;
+						CURRENT_CODE += 1;
+					}
 					if (where_at != 0){
 						where_at = 0;
 						continue;
 					}
 					//printf("CURRENT CODE was: %d\n", CURRENT_CODE);
 				} else {
+					//fprintf(stderr, "where at: %d %d\n", where_at, index);
 					where_at = (TABLE[where_at]->children)[index];
 				}
 
@@ -294,21 +304,25 @@ int main (int argc, char** argv){
 						//printf("%d\n", where_at);
 						//fprintf(stderr, "%d %d\n", CURRENT_CODE, where_at);
 						printf("%d:%d\n", num_bits, where_at);
+						
 						//putBits(num_bits, where_at);
 					
 					//CURRENT_CODE += 1;
 				}
 			}
-			if ((CURRENT_CODE+1 == 1<< num_bits) && to_insert){
+			if (!FULL && (CURRENT_CODE+1 == 1<< num_bits) && to_insert){
 				num_bits += 1;
 			}
 			//fprintf(stderr, "%d 2 %d\n", CURRENT_CODE, num_bits);
 			
-			//printf("%d:%d\n", num_bits, 2);
+			printf("%d:%d\n", num_bits, 2);
 
+			/*
 			putBits(num_bits, 2);
 			flushBits();
-			
+			*/
+
+
 			//putBits(1, 1);
 			//putBits(num_bits, 2);
 			//printf("2\n");
