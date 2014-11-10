@@ -44,7 +44,7 @@ void free_table();
 void new_table(int new_bits);
 void free_stack(struct Stack* my_stack);
 void table_stderr();
-int* new_indices(int* number_remaining, int initialize);
+int* new_indices(int* numer_remaining, int initialize);
 void free_single_trie(int index);
 void pruned_table(int* where_look, int how_many);
 struct Trie* create_new_entry(int* where_look, int index);
@@ -182,8 +182,8 @@ int main (int argc, char** argv){
 					if (where_at == 0){
 						//printf("1\n%d\n", character);
 						//fprintf(stderr, "%d 1\n%d\n", CURRENT_CODE, character);
-						fprintf(stderr, "%d:%d\n", num_bits, 1);
-						fprintf(stderr, "%d:%d\n", 8, returned);
+						// fprintf(stderr, "%d:%d\n", num_bits, 1);
+						// fprintf(stderr, "%d:%d\n", 8, returned);
 						
 						
 						putBits(num_bits, 1);
@@ -193,7 +193,7 @@ int main (int argc, char** argv){
 					} else {
 						//printf("%d\n", where_at);
 						//fprintf(stderr, "%d %d\n", CURRENT_CODE, where_at);
-						fprintf(stderr, "%d:%d\n", num_bits, where_at);
+						// fprintf(stderr, "%d:%d\n", num_bits, where_at);
 						
 						putBits(num_bits, where_at);
 					}
@@ -210,7 +210,22 @@ int main (int argc, char** argv){
 					if (CURRENT_CODE == (1<<num_bits) && to_insert){
 						if (num_bits == MAXBITS){
 							//fprintf(stderr, "%d\n", where_at);
-							FULL = TRUE;
+							if (prune){
+								table_stderr();
+								//return 0;
+								//putBits(num_bits, returned);
+								do_prune(initialize);
+								//fprintf(stderr, "got here\n");
+								num_bits = new_num_bits(CURRENT_CODE);
+								//fprintf(stderr, "%d %d\n", CURRENT_CODE, num_bits);
+								to_insert = FALSE;
+								where_at = 0;
+								//returned = getBits(8);
+								continue;
+								//table_stderr();
+							} else {
+								FULL = TRUE;
+							}
 							//table_stderr();
 							//do_prune(initialize);
 							//return 0;
@@ -254,6 +269,7 @@ int main (int argc, char** argv){
 				if (to_insert){
 					if (!FULL){
 						struct Trie* new_entry = new_trie(returned, where_at, TRUE);
+						//fprintf(stderr, "CURRENT CODE is: %d\n", CURRENT_CODE);
 						insert(index, where_at, CURRENT_CODE);
 						TABLE[CURRENT_CODE] = new_entry;
 						CURRENT_CODE += 1;
@@ -303,7 +319,7 @@ int main (int argc, char** argv){
 						*/
 						//printf("%d\n", where_at);
 						//fprintf(stderr, "%d %d\n", CURRENT_CODE, where_at);
-						fprintf(stderr, "%d:%d\n", num_bits, where_at);
+						// fprintf(stderr, "%d:%d\n", num_bits, where_at);
 						
 						putBits(num_bits, where_at);
 					
@@ -315,7 +331,7 @@ int main (int argc, char** argv){
 			}
 			//fprintf(stderr, "%d 2 %d\n", CURRENT_CODE, num_bits);
 			
-			fprintf(stderr, "%d:%d\n", num_bits, 2);
+			// fprintf(stderr, "%d:%d\n", num_bits, 2);
 
 			
 			putBits(num_bits, 2);
@@ -401,13 +417,13 @@ int main (int argc, char** argv){
 
 
 
-				fprintf(stderr, "%d:%d\n", num_bits, C);
+				//fprintf(stderr, "%d:%d\n", num_bits, C);
 
 
 
 				if (C == 1){
 					finalK = getBits(8);
-					fprintf(stderr, "%d:%d\n", 8, finalK);
+					//fprintf(stderr, "%d:%d\n", 8, finalK);
 					printf("%c", finalK);
 					//fprintf(stderr, "character is %d %d\n", finalK, oldC);
 				}
@@ -469,13 +485,24 @@ int main (int argc, char** argv){
 						}
 						CURRENT_CODE += 1;
 						if (CURRENT_CODE == (1<<num_bits) && !FULL){
-							one_more = TRUE;
 							if (num_bits == MAXBITS){
-								FULL = TRUE;
+								if (prune){
+									//table_stderr();
+									//return 0;
+									do_prune(initialize);
+									num_bits = new_num_bits(CURRENT_CODE);
+									oldC = 0;
+									newC = getBits(num_bits);
+									C = newC;
+									continue;
+								} else {
+									FULL = TRUE;	
+								}
 								//one_more = TRUE;
 								//fprintf(stderr, "hhhhhhhhhhhh%d %d\n", CURRENT_CODE, finalK);
 								//printf("aaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n");
 							} else {
+								one_more = TRUE;
 								num_bits += 1;
 								new_table(num_bits);
 							}
@@ -489,7 +516,7 @@ int main (int argc, char** argv){
 				if (C == 1){
 					//fprintf(stderr, "%d %d\n", CURRENT_CODE, finalK);
 					oldC = 0;
-					fprintf(stderr, "here we go\n");
+					//fprintf(stderr, "here we go\n");
 					if (!FULL || one_more){
 						TABLE[CURRENT_CODE] = new_trie(finalK, oldC, TRUE);
 						int to_insert;
@@ -510,14 +537,24 @@ int main (int argc, char** argv){
 						}
 						CURRENT_CODE += 1;
 						if (CURRENT_CODE == (1<<num_bits) && !FULL){
-							one_more = TRUE;
 							if(num_bits == MAXBITS){
-								FULL = TRUE;
-								
-								
+								if (prune){
+									table_stderr();
+									//return 0;
+									do_prune(initialize);
+									num_bits = new_num_bits(CURRENT_CODE);
+									oldC = 0;
+									one_more = FALSE;
+									newC = getBits(num_bits);
+									C = newC;
+									continue;
+								} else {
+									FULL = TRUE;
+								}
 								//fprintf(stderr, "ggggggggggggggg");
 								//printf("aaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n");
 							} else {
+								one_more = TRUE;
 								num_bits += 1;
 								new_table(num_bits);
 							}
@@ -534,7 +571,7 @@ int main (int argc, char** argv){
 					oldC = newC;
 				}
 				if (one_more && C == 1){
-					fprintf(stderr, "one more is true %d\n", CURRENT_CODE);
+					//fprintf(stderr, "one more is true %d\n", CURRENT_CODE);
 					newC = getBits(num_bits-1);
 				} else {
 					newC = getBits(num_bits);
@@ -768,7 +805,7 @@ int* new_indices(int* number_remaining, int initialize){
 		}
 	}
 	*number_remaining = counter;
-	fprintf(stderr, "%d\n", counter);
+	//fprintf(stderr, "%d\n", counter);
 	return to_return;
 }
 
