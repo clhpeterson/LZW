@@ -341,18 +341,21 @@ int main (int argc, char** argv){
 			initialize = getBits(1);
 			prune = getBits(1);
 			int num_bits;
+			int one_more;
 			//printf("MAXBITS: %d\n-e: %d\n-p: %d\n", MAXBITS, initialize, prune);
 			if (initialize){
 				num_bits = 9;
 				TABLE = calloc(1<<num_bits, sizeof(struct Trie*));
 				initialize_table();
 				CURRENT_CODE = 256+3;
+				one_more = FALSE;
 			} else {
 				num_bits = 2;
 				TABLE = calloc(1<<num_bits, sizeof(struct Trie*));
 				TABLE[0] = new_trie(-1, -1, FALSE);
 				CURRENT_CODE = 3;
 				TABLE[1] = new_trie(-1, 0, FALSE);
+				one_more = TRUE;
 			}
 			int newC = getBits(num_bits);
 			int oldC = 0;
@@ -362,10 +365,12 @@ int main (int argc, char** argv){
 
 			struct Stack* my_stack = initialize_stack();
 
+			one_more = FALSE;
 
-			int one_more = FALSE;
+			//int one_more = FALSE;
 			int k_omega_k = FALSE;
 			FULL = FALSE;
+			int just_written = FALSE;
 			//printf("sldkfljdkf\n");
 			//printf("maxbits: %d initialize: %d numbits: %d\n", MAXBITS, initialize, num_bits);
 			while (newC != 2){
@@ -396,12 +401,13 @@ int main (int argc, char** argv){
 
 
 
+				fprintf(stderr, "%d:%d\n", num_bits, C);
 
-				fprintf(stderr, "%d\n", oldC);
 
 
 				if (C == 1){
 					finalK = getBits(8);
+					fprintf(stderr, "%d:%d\n", 8, finalK);
 					printf("%c", finalK);
 					//fprintf(stderr, "character is %d %d\n", finalK, oldC);
 				}
@@ -450,18 +456,20 @@ int main (int argc, char** argv){
 						int index = binary_search(oldC, finalK, 0, num_children-1, &to_insert);
 						insert(index, oldC, CURRENT_CODE);
 						//fprintf(stderr, "here: %d\n", CURRENT_CODE);
-						CURRENT_CODE += 1;
 						if (one_more){
 							//table_stderr();
 							//do_prune(initialize);
 							//table_stderr();
 							//num_bits = new_num_bits(CURRENT_CODE);
 							one_more = FALSE;
+							//num_bits += 1;
 							//FULL = TRUE;
 							//oldC = 0;
 							//continue;
 						}
+						CURRENT_CODE += 1;
 						if (CURRENT_CODE == (1<<num_bits) && !FULL){
+							one_more = TRUE;
 							if (num_bits == MAXBITS){
 								FULL = TRUE;
 								//one_more = TRUE;
@@ -473,34 +481,40 @@ int main (int argc, char** argv){
 							}
 							//fprintf(stderr, "new num bits is: %d\n", num_bits);
 						}
-
+						
 					}
+					
 
 				}
 				if (C == 1){
 					//fprintf(stderr, "%d %d\n", CURRENT_CODE, finalK);
 					oldC = 0;
+					fprintf(stderr, "here we go\n");
 					if (!FULL || one_more){
 						TABLE[CURRENT_CODE] = new_trie(finalK, oldC, TRUE);
 						int to_insert;
 						int num_children = TABLE[oldC]->num_children;
 						int index = binary_search(oldC, finalK, 0, num_children-1, &to_insert);
 						insert(index, oldC, CURRENT_CODE);
-						CURRENT_CODE += 1;
+						
 						if (one_more){
 							//table_stderr();
 							//do_prune(initialize);
 							//table_stderr();
 							//num_bits = new_num_bits(CURRENT_CODE);
 							one_more = FALSE;
+							//num_bits += 1;
 							//FULL = FALSE;
 							//oldC = 0;
 							//continue;
 						}
-						if (CURRENT_CODE == (1<<num_bits)){
+						CURRENT_CODE += 1;
+						if (CURRENT_CODE == (1<<num_bits) && !FULL){
+							one_more = TRUE;
 							if(num_bits == MAXBITS){
 								FULL = TRUE;
-								//one_more = TRUE;
+								
+								
 								//fprintf(stderr, "ggggggggggggggg");
 								//printf("aaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n");
 							} else {
@@ -510,13 +524,21 @@ int main (int argc, char** argv){
 							//fprintf(stderr, "new num bits is: %d\n", num_bits);
 						}
 
+						
+
 					}
+
 
 				}
 				if (C != 1){
 					oldC = newC;
 				}
-				newC = getBits(num_bits);
+				if (one_more && C == 1){
+					fprintf(stderr, "one more is true %d\n", CURRENT_CODE);
+					newC = getBits(num_bits-1);
+				} else {
+					newC = getBits(num_bits);
+				}
 				C = newC;
 			}
 
