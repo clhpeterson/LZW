@@ -167,6 +167,7 @@ int main (int argc, char** argv){
 				//printf( "\nreturned: %d\n", returned);
 
 				num_children = TABLE[where_at]->num_children;
+				TABLE[where_at]->num_appearances += 1;
 				//index is where to insert in TABLE[where_at]
 				if (where_at == 0){
 					//printf("CURRENT CODE is: %d\n", CURRENT_CODE);	
@@ -273,6 +274,7 @@ int main (int argc, char** argv){
 				returned = getBits(8);
 			}
 			//printf("finished loop\n");
+			TABLE[where_at]->num_appearances += 1;
 			if (where_at != 0){
 				num_children = TABLE[where_at]->num_children;
 				//printf("where at: %d\n", where_at);
@@ -302,10 +304,10 @@ int main (int argc, char** argv){
 			}
 			//fprintf(stderr, "%d 2 %d\n", CURRENT_CODE, num_bits);
 			
-			printf("%d:%d\n", num_bits, 2);
+			//printf("%d:%d\n", num_bits, 2);
 
-			//putBits(num_bits, 2);
-			//flushBits();
+			putBits(num_bits, 2);
+			flushBits();
 			
 			//putBits(1, 1);
 			//putBits(num_bits, 2);
@@ -627,6 +629,7 @@ int binary_search(int index, int key, int min_index, int max_index, int* to_inse
 		struct Trie* entry = TABLE[index];
 		//entry->num_appearances += 1;
 		int* children = entry->children;
+		//entry->num_appearances += 1;
 		//fprintf(stderr, "index is: %d\n", index);
 		//fprintf(stderr, "index is: %d\n", index);
 		/*
@@ -639,7 +642,6 @@ int binary_search(int index, int key, int min_index, int max_index, int* to_inse
 		//fprintf(stderr, "\n");
 		if (max_index < min_index){
 				*to_insert = TRUE;
-				entry->num_appearances += 1;
 				return min_index;
 		} else {
 				int mid_index = midpoint(min_index, max_index);
