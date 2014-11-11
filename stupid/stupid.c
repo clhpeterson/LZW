@@ -2,6 +2,8 @@
 
 
 int main(int argc, char** argv){
-		printf("%c%c\n", '\0', '\0');
+		for (int i = 0; i < 1000000; i++){
+				printf("aba");
+		}
 		return 0;
 }

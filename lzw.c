@@ -167,11 +167,13 @@ int main (int argc, char** argv){
 				//printf( "\nreturned: %d\n", returned);
 
 				num_children = TABLE[where_at]->num_children;
-				TABLE[where_at]->num_appearances += 1;
 				//index is where to insert in TABLE[where_at]
-				if (where_at == 0){
+				if (where_at != 0){
 					//printf("CURRENT CODE is: %d\n", CURRENT_CODE);	
+					TABLE[where_at]->num_appearances += 1;
 				}
+
+				
 				
 				index = binary_search(where_at, returned, 0, num_children-1, &to_insert);
 
@@ -214,13 +216,20 @@ int main (int argc, char** argv){
 								//table_stderr();
 								//return 0;
 								//putBits(num_bits, returned);
+								//table_stderr();
+								//fprintf(stderr, "last one is %d\n", where_at);
 								table_stderr();
 								do_prune(initialize);
 								table_stderr();
+								//table_stderr();
 								//fprintf(stderr, "got here\n");
 								num_bits = new_num_bits(CURRENT_CODE);
+								if (where_at == 0){
+										//returned = getBits(8);
+								}
 								//fprintf(stderr, "%d %d\n", CURRENT_CODE, num_bits);
-								to_insert = FALSE;
+								//fprintf(stderr, "where at is %d\n", where_at);
+								//to_insert = FALSE;
 								where_at = 0;
 								//returned = getBits(8);
 								continue;
@@ -259,8 +268,7 @@ int main (int argc, char** argv){
 				//printf("CURRENT CODE after checking is: %d\n\n", CURRENT_CODE);
 
 				
-
-				
+								
 				//fprintf(stderr, "%d\n", CURRENT_CODE);
 				// add_substring returns NULL if it inserts it, or else returns the entry where the next character was found
 				// with the -e flag, you need to check if add_substring returns null 
@@ -491,9 +499,12 @@ int main (int argc, char** argv){
 							if (num_bits == MAXBITS){
 								if (prune){
 									// TABLE[CURRENT_CODE-1]->num_appearances += 1;
+									//table_stderr();
+									//fprintf(stderr, "oldC is %d\n", oldC);
 									table_stderr();
 									do_prune(initialize);
 									table_stderr();
+									//table_stderr();
 									// return 0;
 									num_bits = new_num_bits(CURRENT_CODE);
 									oldC = 0;
@@ -528,6 +539,12 @@ int main (int argc, char** argv){
 						int num_children = TABLE[oldC]->num_children;
 						int index = binary_search(oldC, finalK, 0, num_children-1, &to_insert);
 						insert(index, oldC, CURRENT_CODE);
+						if (k_omega_k){
+							TABLE[CURRENT_CODE]->num_appearances += 1;
+
+							//fprintf(stderr, "CURRENT_CODE is %d\n", CURRENT_CODE);
+							k_omega_k = FALSE;
+						}
 						
 						if (one_more){
 							//table_stderr();
@@ -546,13 +563,26 @@ int main (int argc, char** argv){
 								if (prune){
 									// return 0;
 									// printf("this is some text\n");
+									//table_stderr();
+									newC = getBits(num_bits);
+									TABLE[newC]->num_appearances += 1;
+									// need to print the new thing
 									table_stderr();
 									do_prune(initialize);
 									table_stderr();
+									//fprintf(stderr, "pruning was successful\n");
+									// table_stderr();
+
+
+									//newC = getBits(num_bits);
+									
 									num_bits = new_num_bits(CURRENT_CODE);
+
 									oldC = 0;
-									one_more = FALSE;
+									
 									newC = getBits(num_bits);
+									//one_more = FALSE;
+									//newC = getBits(num_bits);
 									C = newC;
 									continue;
 								} else {
