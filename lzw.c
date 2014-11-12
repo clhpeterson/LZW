@@ -178,28 +178,87 @@ int main (int argc, char** argv){
 				index = binary_search(where_at, returned, 0, num_children-1, &to_insert);
 
 				//printf("where_at: %d\n", where_at);
-				
 				if (to_insert){
-					//fprintf(stderr, "%d\n", index);
-					if (where_at == 0){
-						//printf("1\n%d\n", character);
-						//fprintf(stderr, "%d 1\n%d\n", CURRENT_CODE, character);
-						// fprintf(stderr, "%d:%d\n", num_bits, 1);
-						// fprintf(stderr, "%d:%d\n", 8, returned);
-						
-						
-						putBits(num_bits, 1);
-						putBits(8, returned);
-						
+						//fprintf(stderr, "%d\n", index);
+						if (where_at == 0){
+								//printf("1\n%d\n", character);
+								//fprintf(stderr, "%d 1\n%d\n", CURRENT_CODE, character);
+								fprintf(stderr, "%d:%d\n", num_bits, 1);
+								fprintf(stderr, "%d:%d\n", 8, returned);
 
-					} else {
-						//printf("%d\n", where_at);
-						//fprintf(stderr, "%d %d\n", CURRENT_CODE, where_at);
-						// fprintf(stderr, "%d:%d\n", num_bits, where_at);
-						
-						putBits(num_bits, where_at);
-					}
+
+								putBits(num_bits, 1);
+								putBits(8, returned);
+
+
+						} else {
+								//printf("%d\n", where_at);
+								//fprintf(stderr, "%d %d\n", CURRENT_CODE, where_at);
+								fprintf(stderr, "%d:%d\n", num_bits, where_at);
+
+								putBits(num_bits, where_at);
+						}
 				}
+
+				if (!FULL){
+						//printf("current code: %d\n", CURRENT_CODE);
+						if (CURRENT_CODE == (1<<num_bits) && to_insert){
+								if (num_bits == MAXBITS){
+										//fprintf(stderr, "%d\n", where_at);
+										if (prune){
+												//table_stderr();
+												//return 0;
+												//putBits(num_bits, returned);
+												//table_stderr();
+												//fprintf(stderr, "last one is %d\n", where_at);
+												table_stderr();
+												do_prune(initialize);
+												table_stderr();
+												//table_stderr();
+												//fprintf(stderr, "got here\n");
+												num_bits = new_num_bits(CURRENT_CODE);
+												if (where_at == 0){
+														//returned = getBits(8);
+												}
+												//fprintf(stderr, "%d %d\n", CURRENT_CODE, num_bits);
+												//fprintf(stderr, "where at is %d\n", where_at);
+												//to_insert = FALSE;
+												where_at = 0;
+												//returned = getBits(8);
+												continue;
+												//table_stderr();
+										} else {
+												FULL = TRUE;
+										}
+										//table_stderr();
+										//do_prune(initialize);
+										//return 0;
+										//table_stderr();
+										//return 0;
+										//fprintf(stderr, "------------------------------------\n");
+										//table_stderr();
+										//num_bits = new_num_bits(CURRENT_CODE);
+										//table_stderr();
+										//fprintf(stderr, "num new bits is %d\n", num_bits);
+										//table_stderr();
+								} else {
+										num_bits += 1;
+										new_table(num_bits);
+								}
+								/*
+								   if(num_bits == MAXBITS){
+								   FULL = TRUE;
+						//fprintf(stderr, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n");
+						} else {
+						num_bits += 1;
+						new_table(num_bits);
+						}*/
+
+						}
+				}
+
+				
+				
 
 
 				if (to_insert && where_at == 0){
@@ -207,63 +266,7 @@ int main (int argc, char** argv){
 				}
 
 
-				if (!FULL){
-				//printf("current code: %d\n", CURRENT_CODE);
-					if (CURRENT_CODE == (1<<num_bits) && to_insert){
-						if (num_bits == MAXBITS){
-							//fprintf(stderr, "%d\n", where_at);
-							if (prune){
-								//table_stderr();
-								//return 0;
-								//putBits(num_bits, returned);
-								//table_stderr();
-								//fprintf(stderr, "last one is %d\n", where_at);
-								table_stderr();
-								do_prune(initialize);
-								table_stderr();
-								//table_stderr();
-								//fprintf(stderr, "got here\n");
-								num_bits = new_num_bits(CURRENT_CODE);
-								if (where_at == 0){
-										//returned = getBits(8);
-								}
-								//fprintf(stderr, "%d %d\n", CURRENT_CODE, num_bits);
-								//fprintf(stderr, "where at is %d\n", where_at);
-								//to_insert = FALSE;
-								where_at = 0;
-								//returned = getBits(8);
-								continue;
-								//table_stderr();
-							} else {
-								FULL = TRUE;
-							}
-							//table_stderr();
-							//do_prune(initialize);
-							//return 0;
-							//table_stderr();
-							//return 0;
-							//fprintf(stderr, "------------------------------------\n");
-							//table_stderr();
-							//num_bits = new_num_bits(CURRENT_CODE);
-							//table_stderr();
-							//fprintf(stderr, "num new bits is %d\n", num_bits);
-							//table_stderr();
-						} else {
-							num_bits += 1;
-							new_table(num_bits);
-						}
-						/*
-						if(num_bits == MAXBITS){
-							FULL = TRUE;
-							//fprintf(stderr, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n");
-						} else {
-							num_bits += 1;
-							new_table(num_bits);
-						}*/
-						
-					}
-				}
-					//printf("num bits: %d\n", num_bits);
+									//printf("num bits: %d\n", num_bits);
 
 				//printf("CURRENT CODE after checking is: %d\n\n", CURRENT_CODE);
 
@@ -337,7 +340,7 @@ int main (int argc, char** argv){
 				}
 			}
 			if (!FULL && (CURRENT_CODE+1 == 1<< num_bits) && to_insert){
-				num_bits += 1;
+				//num_bits += 1;
 			}
 			//fprintf(stderr, "%d 2 %d\n", CURRENT_CODE, num_bits);
 			
@@ -384,6 +387,7 @@ int main (int argc, char** argv){
 				one_more = TRUE;
 			}
 			int newC = getBits(num_bits);
+			fprintf(stderr, "%d:%d\n", num_bits, newC);
 			int oldC = 0;
 			int C = newC;
 			int prefix;
@@ -397,9 +401,169 @@ int main (int argc, char** argv){
 			int k_omega_k = FALSE;
 			FULL = FALSE;
 			int just_written = FALSE;
+			int yet_again = FALSE;
+			int just_pruned = FALSE;
 			//printf("sldkfljdkf\n");
 			//printf("maxbits: %d initialize: %d numbits: %d\n", MAXBITS, initialize, num_bits);
 			while (newC != 2){
+
+					
+
+				if (newC == 1){
+						finalK = getBits(8);
+						if (!just_pruned){
+								fprintf(stderr, "8:%d\n", finalK);
+								printf("%c", finalK);
+						}
+						just_pruned = FALSE;
+				} else if (newC != -1){
+						if (C >= CURRENT_CODE){
+								my_stack = push(finalK, my_stack);
+								C = oldC;
+								k_omega_k = TRUE;
+						}
+
+						prefix = TABLE[C]->prefix_code;
+				
+						while (prefix != 0){
+
+								TABLE[C]->num_appearances += 1;
+								my_stack = push(TABLE[C]->character, my_stack);
+								C = prefix;
+								prefix = TABLE[C]->prefix_code;
+						}
+
+						TABLE[C]->num_appearances += 1;
+						finalK = TABLE[C]->character;
+						printf("%c", finalK);
+
+						while (my_stack->character != -1){
+								int K = pop(&my_stack);
+								printf("%c", K);
+						}
+				}
+
+				if (oldC != 0 || newC == -1 || yet_again){
+						if (!FULL || one_more){
+								if (!yet_again){
+								if (one_more){
+										one_more = FALSE;
+								}
+
+								TABLE[CURRENT_CODE] = new_trie(finalK, oldC, TRUE);
+								if (k_omega_k){
+										TABLE[CURRENT_CODE]->num_appearances += 1;
+										k_omega_k = FALSE;
+								}
+
+								int to_insert;
+								int num_children = TABLE[oldC]->num_children;
+								int index = binary_search(oldC, finalK, 0, num_children-1, &to_insert);
+								insert(index, oldC, CURRENT_CODE);
+								CURRENT_CODE += 1;
+								}
+								if (CURRENT_CODE == (1<<num_bits) || yet_again){
+										if(num_bits == MAXBITS || yet_again){
+												if (prune){
+														// return 0;
+														// printf("this is some text\n");
+														//table_stderr();
+														//newC = getBits(num_bits);
+														//TABLE[newC]->num_appearances += 1;
+														// need to print the new thing
+														//fprintf(stderr, "new C is %d old C is %d\n", newC, oldC);
+														if (newC == -1 && !yet_again){
+																newC = getBits(num_bits);
+																oldC = 0;
+																C = newC;
+																fprintf(stderr, "%d:%d\n", num_bits, newC, CURRENT_CODE);
+																yet_again = TRUE;
+																continue;
+														}
+														yet_again = FALSE;
+																//TABLE[newC]->num_appearances += 1;
+
+
+																
+														table_stderr();
+														do_prune(initialize);
+														table_stderr();
+														//printf("\npruned\n");
+														//fprintf(stderr, "pruning was successful\n");
+														// table_stderr();
+	
+																
+																
+
+														int tempC = newC;
+														num_bits = new_num_bits(CURRENT_CODE);
+														newC = getBits(num_bits);
+
+														oldC = 0;
+														if (tempC == 1 && newC == 1){
+																just_pruned = TRUE;
+														}
+
+														fprintf(stderr, "%d:%d\n", num_bits, newC);
+														//one_more = FALSE;
+														//newC = getBits(num_bits);
+														C = newC;
+														continue;
+												} else {
+														one_more = TRUE;
+														FULL = TRUE;
+												}
+												//fprintf(stderr, "ggggggggggggggg");
+												//printf("aaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n");
+										} else {
+												one_more = TRUE;
+												num_bits += 1;
+												new_table(num_bits);
+										}
+										//fprintf(stderr, "new num bits is: %d\n", num_bits);
+								}
+
+								
+						}
+				}
+
+
+
+
+				if (newC == 1){
+						oldC = 0;
+						newC = -1;
+						continue;
+				} else if (newC == -1){
+						oldC = 0;
+				} else {
+						oldC = newC;
+				}
+
+				if (newC == -1 && one_more && CURRENT_CODE){
+						newC = getBits(num_bits-1);
+						one_more = FALSE;
+						fprintf(stderr, "%d:%d\n", num_bits-1, newC);
+				} else {
+					newC = getBits(num_bits);
+					fprintf(stderr, "%d:%d\n", num_bits, newC);
+				}
+				
+				
+				C = newC;
+			}
+
+
+
+
+
+
+
+
+
+
+
+
 
 				/*
 				if (C == 1){
@@ -413,7 +577,7 @@ int main (int argc, char** argv){
 				while (prefix != 0){
 					my_stack = push(TABLE[C])
 				}
-*/
+
 
 
 				// if CURRENT_CODE = (1<<num_bits)-1, then you know there's only one entry left in the 
@@ -615,6 +779,7 @@ int main (int argc, char** argv){
 				}
 				C = newC;
 			}
+*/
 
 
 
